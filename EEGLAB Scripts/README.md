@@ -2,7 +2,7 @@
 
 EpochRemoval.m
 
-      Semi-automate GUI interactions as task had to be repeated 540 times...
+      Semi-automated GUI interactions as task had to be repeated 540 times...
   
 Preprocessing.m
 
