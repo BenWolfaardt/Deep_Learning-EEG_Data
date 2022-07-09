@@ -3,7 +3,20 @@ Author: Ben Wolfaardt
 
 DESCRIPTION: 
 The following script has been written to convert SET EEG files into CSV files such 
-that they can be used to train our Deep Learning model.
+that they can be used to train our Deep Learning model. 
+
+VISUALISATION: 
+Each CSV files represents an epoched data frame, per trigger, per participant and is 
+called dfEpoched in the below code.
+
+epoch 1                                    epoch ...                                    epoch n
+
+[ Channel   time step (in ms) ] [ Channel   time step (in ms) ] [ Channel   time step (in ms) ]
+[    1      0     ...     750 ] [    1      0     ...     750 ] [    1      0     ...     750 ]
+[    .         .              ] [    .         .              ] [    .         .              ]
+[    .            .           ] [    .            .           ] [    .            .           ]
+[    .               .        ] [    .               .        ] [    .               .        ]
+[    63                 .     ] [    63                 .     ] [    63                 .     ] 
 
 PEASE NOTE: 
 That this project assumes that you have your SET files stored in the 
