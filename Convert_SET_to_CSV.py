@@ -42,8 +42,8 @@ import mne
 import pandas as pd
 import numpy as np
 
-DIRECTORY_SET_DATA_ROOT = "E:\\Skripsie\\Data\\1-Pre_Processed"
-DIRECTORY_CSV_DATA_OUTPUT = "E:\\Skripsie\\Data\\2-CSV"
+DIRECTORY_SET_DATA_ROOT = "E:\\Skripsie\\Data\\New\\1-Pre_Processed"
+DIRECTORY_CSV_DATA_OUTPUT = "E:\\Skripsie\\Data\\New\\2-CSV"
 
 Participants = ['A', 'B', 'C', 'D']
 Triggers = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18]
@@ -68,7 +68,7 @@ for participant in Participants:
                 # Create output directory if it does not exist
                 if i == 0:
                     try: 
-                        os.makedirs(f"{DIRECTORY_CSV_DATA_OUTPUT}\{participant}", exist_ok=True)
+                        os.makedirs(f"{DIRECTORY_CSV_DATA_OUTPUT}\{participant}\T{LEADING_ZERO}{trigger}", exist_ok=True)
                     except:
                         print("The path already exists")
                 
@@ -76,15 +76,15 @@ for participant in Participants:
 
                 # Save CSV in desired location
                 dfEpoched = pd.DataFrame(epoch)
-                directory = f"{DIRECTORY_CSV_DATA_OUTPUT}\{participant}"
-                filename = f"T{LEADING_ZERO}{trigger}_{i:03d}.csv"
+                directory = f"{DIRECTORY_CSV_DATA_OUTPUT}\{participant}\T{LEADING_ZERO}{trigger}"
+                filename = f"T{LEADING_ZERO}{trigger}-{i:03d}.csv"
                 np.savetxt(f"{directory}\{filename}", dfEpoched, delimiter=',')
 
         except IOError as e:
             # Print error message and remind user that an error needs to be adressed afterwards
-            print(f"Error: {e}")
-            print("")
-            print(f"An error occurded for participant {participant} in trigger {trigger}.")
+            print(f"An error occurded for participant: {participant} in trigger: T{LEADING_ZERO}{trigger}.")
             print("Remeber to check back and correct this!")
+            print("")
+            print(f"Error: {e}")
 
 print("Sucessfully converted SET files to CSVs")
