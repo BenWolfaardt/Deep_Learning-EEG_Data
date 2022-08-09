@@ -81,10 +81,8 @@ for participant in Participants:
                 np.savetxt(f"{directory}\{filename}", dfEpoched, delimiter=',')
 
         except IOError as e:
-            # Print error message and remind user that an error needs to be adressed afterwards
             print(f"An error occurded for participant: {participant} in trigger: T{LEADING_ZERO}{trigger}.")
-            print("Remeber to check back and correct this!")
-            print("")
+            print("Remeber to check back and correct this!\n")
             print(f"Error: {e}")
 
 print("Sucessfully converted SET files to CSVs")
