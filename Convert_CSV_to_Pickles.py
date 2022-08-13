@@ -16,26 +16,42 @@ import os
 import random
 import fnmatch
 import pickle
+from textwrap import indent
 import numpy as np
 from tqdm import tqdm
 from sklearn.preprocessing import StandardScaler
 
 DIRECTORY_CSV_DATA_ROOT = 'E:\\Skripsie\\Data\\New\\2-CSV'
 DIRECTORY_PICKLE_DATA_OUTPUT = "E:\\Skripsie\\Data\\New\\3-Pickles"
-PERCENTAGE_TRAINING_AND_VALIDATION = float(90)
+PERCENTAGE_TRAINING_AND_VALIDATION = float(1)
 
-# Participants = ['A', 'B', 'C', 'D']
-# Grouped_triggers =  [
-#                         [1,2,7],    # Colours - Purple
-#                         [4,3,5],    # Colours - Red
-#                         [14,11,9],  # Numbers - Seven
-#                         [15,13,10], # Numbers - Two
-#                         [17,18,16], # Objects - Ball
-#                         [8,6,12]    # Objects - Pen
-#                     ]
-
-Participants = ['C','D']
-Grouped_triggers =  [[8,9], []]
+Participants = ['A', 'B', 'C', 'D']
+# Participant D, Trigger 11's data is incorrect and only has 59 channels instead of 63.
+# Grouped_triggers without the "Seven" experiment
+Grouped_triggers =  [
+                        [1,2,7],    # Colours - Purple
+                        [3,4,5],    # Colours - Red
+                        # [9,11,14],  # Numbers - Seven
+                        [10,13,15], # Numbers - Two
+                        [16,17,18], # Objects - Ball
+                        [6,8,12]    # Objects - Pen
+                    ]
+# Experiment_number = {
+#                         0: "Purple", 
+#                         1: "Red", 
+#                         2: "Seven", 
+#                         3: "Two", 
+#                         4: "Ball", 
+#                         5: "Pen"
+#                     }
+# Experiment_number without the "Seven" experiment
+Experiment_number = {
+                        0: "Purple", 
+                        1: "Red", 
+                        2: "Two", 
+                        3: "Ball", 
+                        4: "Pen", 
+                    }
 scaler = StandardScaler()
 
 # Split the CSV data into [training & validation (grouped)] and 
@@ -82,8 +98,8 @@ def exists_in_list(testing_list, x, i, trigger, LEADING_ZERO):
     return i
 
 # Create and populate the Training/Test data
-def populate_data_type_epoch_lists(selected_epochs, data, data_type, path, grouped_triggers, trigger):
-    print(f"1. Generating {data_type} data (consisting of {len(selected_epochs)} epochs):")
+def populate_data_type_epoch_lists(selected_epochs, data, data_type, path, participant, grouped_triggers, trigger):
+    print(f"Generating {data_type} data (consisting of {len(selected_epochs)} epochs) for participant: {participant}")
     
     trigger_instance = grouped_triggers.index(trigger)
 
@@ -103,8 +119,11 @@ def populate_data_type_epoch_lists(selected_epochs, data, data_type, path, group
         # print("Remeber to check back and correct this!")
 
 # Create and populate the pickles from the Training/Testing data
-def create_data_type_pickles(data, x, y, data_type, participant, category):
-    print(f"2. Generating Pickles for {data_type} data\n")
+def create_data_type_pickles(data, data_type, experiment):
+    print(f"Generating Pickles for {data_type} data")
+    
+    x = []
+    y = []
 
     random.shuffle(data)
 
@@ -114,19 +133,25 @@ def create_data_type_pickles(data, x, y, data_type, participant, category):
     # Parenthesis depend on the input data -1 being batch size, channels, datasamples, idk
     x = np.array(x).reshape(-1,63,450,1)
 
-    pickle_out = open(f"{participant}-{category}-X-{data_type}.pickle","wb")
+    pickle_out = open(f"{experiment}-X-{data_type}.pickle","wb")
     pickle.dump(x, pickle_out)
     pickle_out.close()
 
-    pickle_out = open(f"{participant}-{category}-Y-{data_type}.pickle","wb")
+    pickle_out = open(f"{experiment}-Y-{data_type}.pickle","wb")
     pickle.dump(y, pickle_out)
     pickle_out.close()
 
 for grouped_triggers in Grouped_triggers:
-    for trigger in grouped_triggers:
-        for participant in Participants:
-            print(f"Participant: {participant}\nTrigger: {trigger}\n")
+    training_data = []
+    testing_data = []
 
+    experiment_name = Experiment_number[Grouped_triggers.index(grouped_triggers)]
+    print(f"Experiment: {experiment_name}\n")
+
+    for trigger in grouped_triggers:
+        print(f"Trigger: {trigger}\n")
+
+        for participant in Participants:
             # Set LEADING_ZERO prefix based on trigger naming convention 
             if trigger <= 9:
                 LEADING_ZERO = "0"
@@ -140,24 +165,13 @@ for grouped_triggers in Grouped_triggers:
             testing_epochs = []
             training_and_validation_epochs , testing_epochs = generate_split_data_type_epoch_list(path, trigger, LEADING_ZERO)
 
-            # Training Data
-            training_data = []
-            training_data = populate_data_type_epoch_lists(training_and_validation_epochs, training_data, "Training", path, grouped_triggers, trigger)
+            training_data = populate_data_type_epoch_lists(training_and_validation_epochs, training_data, "Training", path, participant, grouped_triggers, trigger)
+            # testing_data = populate_data_type_epoch_lists(testing_epochs, testing_data, "Test", path, participant, grouped_triggers, trigger)
+            print()
 
-            # Training Pickles
-            x_training = []
-            y_training = []
-            create_data_type_pickles(training_data, x_training, y_training, "Training", participant, trigger)
-
-            # Test Data
-            testing_data = []
-            testing_data = populate_data_type_epoch_lists(testing_epochs, testing_data, "Test", path, grouped_triggers, trigger)
-            
-            # Test Pickles
-            x_test = []
-            y_test = []
-            create_data_type_pickles(testing_data, x_test, y_test, "Test", participant, trigger)
-            print("------------------------------------------------------------------------------------------------------------------------------------------------------------")
+    create_data_type_pickles(training_data, "Training", experiment_name)
+    create_data_type_pickles(testing_data, "Test", experiment_name)
+    print("------------------------------------------------------------------------------------------------------------------------------------------------------------\n")
 
 # Testing a recursive implementation of training/test split
 # def exists_in_list(testing_list, x, i):
