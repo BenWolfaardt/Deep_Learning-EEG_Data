@@ -34,8 +34,8 @@ PERCENTAGE_TRAINING_AND_VALIDATION = float(90)
 #                         [8,6,12]    # Objects - Pen
 #                     ]
 
-Participants = ['C']
-Grouped_triggers =  [[8,9], [1,2]]
+Participants = ['C','D']
+Grouped_triggers =  [[8,9], []]
 scaler = StandardScaler()
 
 # Split the CSV data into [training & validation (grouped)] and 
@@ -103,7 +103,7 @@ def populate_data_type_epoch_lists(selected_epochs, data, data_type, path, group
         # print("Remeber to check back and correct this!")
 
 # Create and populate the pickles from the Training/Testing data
-def create_data_type_pickle(data, x, y, data_type, participant, category):
+def create_data_type_pickles(data, x, y, data_type, participant, category):
     print(f"2. Generating Pickles for {data_type} data\n")
 
     random.shuffle(data)
@@ -147,7 +147,7 @@ for grouped_triggers in Grouped_triggers:
             # Training Pickles
             x_training = []
             y_training = []
-            create_data_type_pickle(training_data, x_training, y_training, "Training", participant, trigger)
+            create_data_type_pickles(training_data, x_training, y_training, "Training", participant, trigger)
 
             # Test Data
             testing_data = []
@@ -156,7 +156,7 @@ for grouped_triggers in Grouped_triggers:
             # Test Pickles
             x_test = []
             y_test = []
-            create_data_type_pickle(testing_data, x_test, y_test, "Test", participant, trigger)
+            create_data_type_pickles(testing_data, x_test, y_test, "Test", participant, trigger)
             print("------------------------------------------------------------------------------------------------------------------------------------------------------------")
 
 # Testing a recursive implementation of training/test split
