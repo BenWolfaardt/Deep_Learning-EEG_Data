@@ -25,7 +25,6 @@ DIRECTORY_PICKLE_DATA_OUTPUT = "E:\\Skripsie\\Data\\New\\3-Pickles"
 PERCENTAGE_TRAINING_AND_VALIDATION = float(90)
 
 # Participants = ['A', 'B', 'C', 'D']
-Participants = ['C']
 # Grouped_triggers =  [
 #                         [1,2,7],    # Colours - Purple
 #                         [4,3,5],    # Colours - Red
@@ -34,72 +33,40 @@ Participants = ['C']
 #                         [17,18,16], # Objects - Ball
 #                         [8,6,12]    # Objects - Pen
 #                     ]
-Grouped_triggers =  [[8], [9]]
 
-# TODO check the standardScalar thing I deleted
-sc = StandardScaler()
+Participants = ['C']
+Grouped_triggers =  [[8,9], [1,2]]
+scaler = StandardScaler()
 
 # Split the CSV data into [training & validation (grouped)] and testing data
-def create_data_split(Participants):
-    for grouped_triggers in Grouped_triggers:
-        for trigger in grouped_triggers:
-            for participant in Participants:
-                try:
-                    # Set LEADING_ZERO prefix based on trigger naming convention 
-                    if trigger <= 9:
-                        LEADING_ZERO = "0"
-                    else:
-                        LEADING_ZERO = ""
+def create_data_split(path, trigger, LEADING_ZERO):
+    try:
+        # Random split of data into [training & validation (grouped)] and testing data
+        list_csv_files = fnmatch.filter(os.listdir(path), '*.csv')
+        k = len(list_csv_files) * PERCENTAGE_TRAINING_AND_VALIDATION // 100
+        k = round(k)
+        k = int(k)
+        indicies = random.sample(range(len(list_csv_files)), k)
+        indicies.sort()
+        
+        training_and_validation_list = [list_csv_files[i] for i in indicies]
+        testing_list = []
 
-                    # Directory manipulation
-                    directory_trigger = f"{DIRECTORY_CSV_DATA_ROOT}\{participant}\T{LEADING_ZERO}{trigger}"
-                    # Random split of data into [training & validation (grouped)] and testing data
-                    list_csv_files = fnmatch.filter(os.listdir(directory_trigger), '*.csv')
-                    # list_csv_files = [1,2,3,4,5]
-                    k = len(list_csv_files) * PERCENTAGE_TRAINING_AND_VALIDATION // 100
-                    k = round(k)
-                    k = int(k)
-                    indicies = random.sample(range(len(list_csv_files)), k)
-                    indicies.sort()
-                    training_and_validation_list = [list_csv_files[i] for i in indicies]
-                    # print(f"{training_and_validation_list}")
-
-                    testing_list = []
-                    i = 0
-                    for csv_file in range(len(list_csv_files)):
-                        if csv_file < len(indicies):
-                            i = exists_in_list(testing_list, int(indicies[csv_file]), i, trigger, LEADING_ZERO)
-                        else:
-                            if i < len(indicies) - 1:
-                                testing_list.append(f"T{LEADING_ZERO}{trigger}-{(i + 1):03d}.csv")
-                                i += 1
-                            else:
-                                break
-                    # print(f"Answer: {testing_list}")
-                except Exception as e:
-                    print(f"Error: {e}")
-
-                try: 
-                    # Training Data
-                    training_data = []
-                    training_data = create_data(directory_trigger, training_and_validation_list, "Training", grouped_triggers, trigger)
-
-                    x_training = []
-                    y_training = []
-                    create_pickle(training_data, x_training, y_training, "Training", participant, category)
-
-                    # Test Data
-                    testing_data = []
-                    testing_data = create_data(directory_trigger, testing_list, "Test", grouped_triggers, trigger)
-
-                    x_test = []
-                    y_test = []
-                    create_pickle(testing_data, x_test, y_test, "Test", participant, category)
-
-                except Exception as e:
-                    print(f"Error: {e}")    
-
-    return training_and_validation_list, testing_list
+        i = 0
+        for csv_file in range(len(list_csv_files)):
+            if csv_file < len(indicies):
+                i = exists_in_list(testing_list, int(indicies[csv_file]), i, trigger, LEADING_ZERO)
+            else:
+                if i < len(indicies) - 1:
+                    testing_list.append(f"T{LEADING_ZERO}{trigger}-{(i + 1):03d}.csv")
+                    i += 1
+                else:
+                    break
+        
+        return training_and_validation_list, testing_list
+        
+    except Exception as e:
+        print(f"Error: {e}")
 
 def exists_in_list(testing_list, x, i, trigger, LEADING_ZERO):
     while x != i:
@@ -112,32 +79,34 @@ def exists_in_list(testing_list, x, i, trigger, LEADING_ZERO):
     return i
 
 # Create and populate the Training/Testing data
-def create_data(path, data, data_type, grouped_triggers, trigger):
+def create_data(selected_epochs, data, data_type, path, grouped_triggers, trigger):
+    print(f"1. Generating {data_type} data (consisting of {len(selected_epochs)} epochs):")
+    
     trigger_instance = grouped_triggers.index(trigger)
 
-    for count, epoch in enumerate(tqdm(data)):
-        try:
-            if count == 49:
-                pass
-            if count < len(data) - 1:
-                epoch_array = np.genfromtxt(f"{path}\{epoch}", delimiter=',')
-                new_array = sc.fit_transform(epoch_array)
-                # Instead of having the full 0:750 ms now we are reshaping it to 100:550 ms
-                reshape_array = new_array[:,100:550]
-                data.append([reshape_array, trigger_instance])
-            else:
-                break
-        except Exception as e:
-            print(f"Error: {e}")
-            print("")
-            print(f"An error occurded on {data_type} trigger: {trigger}.")
-            print("Remeber to check back and correct this!")
-            
-    print(f"{data_type} data conists of {len(training_data)}")
-    return data
+    try:
+        for count, epoch in enumerate(tqdm(selected_epochs)):
+            # print(f"count: {count}, len {len(selected_epochs)}, epoch: {epoch}")
+            epoch_array = np.genfromtxt(f"{path}\{epoch}", delimiter=',')
+            new_array = scaler.fit_transform(epoch_array, None)
+            # # Instead of having the full 0:750 ms now we are reshaping it to 100:550 ms
+            reshape_array = new_array[:,100:550]
+            # print(f"reshape_array: {reshape_array}")
+            # print(f"trigger_instance: {trigger_instance}")
+            data.append([reshape_array, trigger_instance])
+        
+        return data
+
+    except Exception as e:
+        # print(f"Error: {e}\n")
+        print(f"An error occurded on {data_type} trigger: {trigger}.")
+        print(f"count: {count} epoch: {epoch}.")
+        # print("Remeber to check back and correct this!")
 
 # Create and populate the pickles from the Training/Testing data
 def create_pickle(data, x, y, data_type, participant, category):
+    print(f"2. Generating Pickles for {data_type} data\n")
+
     random.shuffle(data)
 
     for features, label in data:
@@ -147,17 +116,50 @@ def create_pickle(data, x, y, data_type, participant, category):
     x = np.array(x).reshape(-1,63,450,1)
 
     pickle_out = open(f"{participant}-{category}-X-{data_type}.pickle","wb")
-    pickle.dump(X_test, pickle_out)
+    pickle.dump(x, pickle_out)
     pickle_out.close()
 
     pickle_out = open(f"{participant}-{category}-Y-{data_type}.pickle","wb")
-    pickle.dump(y_test, pickle_out)
+    pickle.dump(y, pickle_out)
     pickle_out.close()
 
-# Generate the list of [training & validation (grouped)] and testing data
-# training_and_validation_list, testing_list = create_data_split()
-create_data_split(Participants)
+for grouped_triggers in Grouped_triggers:
+    for trigger in grouped_triggers:
+        for participant in Participants:
+            print(f"Participant: {participant}\nTrigger: {trigger}\n")
+            #
+            # Set LEADING_ZERO prefix based on trigger naming convention 
+            if trigger <= 9:
+                LEADING_ZERO = "0"
+            else:
+                LEADING_ZERO = ""
+            # Directory manipulation
+            path = f"{DIRECTORY_CSV_DATA_ROOT}\{participant}\T{LEADING_ZERO}{trigger}"
 
+            # Create data split for training and validation data
+            training_and_validation_epochs = []
+            testing_epochs = []
+            # Generate the list of [training & validation (grouped)] and testing epochs based on the PERCENTAGE_TRAINING_AND_VALIDATION
+            training_and_validation_epochs , testing_epochs = create_data_split(path, trigger, LEADING_ZERO)
+
+            # Training Data
+            training_data = []
+            training_data = create_data(training_and_validation_epochs, training_data, "Training", path, grouped_triggers, trigger)
+
+            # Training Pickles
+            x_training = []
+            y_training = []
+            create_pickle(training_data, x_training, y_training, "Training", participant, trigger)
+
+            # Test Data
+            testing_data = []
+            testing_data = create_data(testing_epochs, testing_data, "Test", path, grouped_triggers, trigger)
+            
+            # Test Pickles
+            x_test = []
+            y_test = []
+            create_pickle(testing_data, x_test, y_test, "Test", participant, trigger)
+            print("------------------------------------------------------------------------------------------------------------------------------------------------------------")
 
 # Testing a recursive implementation of training/test split
 # def exists_in_list(testing_list, x, i):
