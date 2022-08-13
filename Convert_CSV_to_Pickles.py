@@ -23,7 +23,7 @@ from sklearn.preprocessing import StandardScaler
 
 DIRECTORY_CSV_DATA_ROOT = 'E:\\Skripsie\\Data\\New\\2-CSV'
 DIRECTORY_PICKLE_DATA_OUTPUT = "E:\\Skripsie\\Data\\New\\3-Pickles"
-PERCENTAGE_TRAINING_AND_VALIDATION = float(1)
+PERCENTAGE_TRAINING_AND_VALIDATION = float(90)
 
 Participants = ['A', 'B', 'C', 'D']
 # Participant D, Trigger 11's data is incorrect and only has 59 channels instead of 63.
@@ -166,7 +166,7 @@ for grouped_triggers in Grouped_triggers:
             training_and_validation_epochs , testing_epochs = generate_split_data_type_epoch_list(path, trigger, LEADING_ZERO)
 
             training_data = populate_data_type_epoch_lists(training_and_validation_epochs, training_data, "Training", path, participant, grouped_triggers, trigger)
-            # testing_data = populate_data_type_epoch_lists(testing_epochs, testing_data, "Test", path, participant, grouped_triggers, trigger)
+            testing_data = populate_data_type_epoch_lists(testing_epochs, testing_data, "Test", path, participant, grouped_triggers, trigger)
             print()
 
     create_data_type_pickles(training_data, "Training", experiment_name)
