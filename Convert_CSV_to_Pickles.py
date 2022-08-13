@@ -38,8 +38,9 @@ Participants = ['C']
 Grouped_triggers =  [[8,9], [1,2]]
 scaler = StandardScaler()
 
-# Split the CSV data into [training & validation (grouped)] and testing data
-def create_data_split(path, trigger, LEADING_ZERO):
+# Split the CSV data into [training & validation (grouped)] and 
+# testing epochs based on the PERCENTAGE_TRAINING_AND_VALIDATION
+def generate_split_data_type_epoch_list(path, trigger, LEADING_ZERO):
     try:
         # Random split of data into [training & validation (grouped)] and testing data
         list_csv_files = fnmatch.filter(os.listdir(path), '*.csv')
@@ -68,6 +69,8 @@ def create_data_split(path, trigger, LEADING_ZERO):
     except Exception as e:
         print(f"Error: {e}")
 
+# TODO description of this function
+# TODO rename funciton to something more descriptive
 def exists_in_list(testing_list, x, i, trigger, LEADING_ZERO):
     while x != i:
         if x == i:
@@ -78,33 +81,29 @@ def exists_in_list(testing_list, x, i, trigger, LEADING_ZERO):
     i += 1
     return i
 
-# Create and populate the Training/Testing data
-def create_data(selected_epochs, data, data_type, path, grouped_triggers, trigger):
+# Create and populate the Training/Test data
+def populate_data_type_epoch_lists(selected_epochs, data, data_type, path, grouped_triggers, trigger):
     print(f"1. Generating {data_type} data (consisting of {len(selected_epochs)} epochs):")
     
     trigger_instance = grouped_triggers.index(trigger)
 
     try:
-        for count, epoch in enumerate(tqdm(selected_epochs)):
-            # print(f"count: {count}, len {len(selected_epochs)}, epoch: {epoch}")
+        for epoch in tqdm(selected_epochs):
             epoch_array = np.genfromtxt(f"{path}\{epoch}", delimiter=',')
             new_array = scaler.fit_transform(epoch_array, None)
-            # # Instead of having the full 0:750 ms now we are reshaping it to 100:550 ms
+            # Instead of having the full 0:750 ms now we are reshaping it to 100:550 ms
             reshape_array = new_array[:,100:550]
-            # print(f"reshape_array: {reshape_array}")
-            # print(f"trigger_instance: {trigger_instance}")
             data.append([reshape_array, trigger_instance])
         
         return data
 
     except Exception as e:
-        # print(f"Error: {e}\n")
-        print(f"An error occurded on {data_type} trigger: {trigger}.")
-        print(f"count: {count} epoch: {epoch}.")
+        print(f"An error occurded whilst creating the {data_type} data for trigger: {trigger} epoch {epoch}.")
+        # TODO raise flag so that this is printed at the end. 
         # print("Remeber to check back and correct this!")
 
 # Create and populate the pickles from the Training/Testing data
-def create_pickle(data, x, y, data_type, participant, category):
+def create_data_type_pickle(data, x, y, data_type, participant, category):
     print(f"2. Generating Pickles for {data_type} data\n")
 
     random.shuffle(data)
@@ -127,7 +126,7 @@ for grouped_triggers in Grouped_triggers:
     for trigger in grouped_triggers:
         for participant in Participants:
             print(f"Participant: {participant}\nTrigger: {trigger}\n")
-            #
+
             # Set LEADING_ZERO prefix based on trigger naming convention 
             if trigger <= 9:
                 LEADING_ZERO = "0"
@@ -139,26 +138,25 @@ for grouped_triggers in Grouped_triggers:
             # Create data split for training and validation data
             training_and_validation_epochs = []
             testing_epochs = []
-            # Generate the list of [training & validation (grouped)] and testing epochs based on the PERCENTAGE_TRAINING_AND_VALIDATION
-            training_and_validation_epochs , testing_epochs = create_data_split(path, trigger, LEADING_ZERO)
+            training_and_validation_epochs , testing_epochs = generate_split_data_type_epoch_list(path, trigger, LEADING_ZERO)
 
             # Training Data
             training_data = []
-            training_data = create_data(training_and_validation_epochs, training_data, "Training", path, grouped_triggers, trigger)
+            training_data = populate_data_type_epoch_lists(training_and_validation_epochs, training_data, "Training", path, grouped_triggers, trigger)
 
             # Training Pickles
             x_training = []
             y_training = []
-            create_pickle(training_data, x_training, y_training, "Training", participant, trigger)
+            create_data_type_pickle(training_data, x_training, y_training, "Training", participant, trigger)
 
             # Test Data
             testing_data = []
-            testing_data = create_data(testing_epochs, testing_data, "Test", path, grouped_triggers, trigger)
+            testing_data = populate_data_type_epoch_lists(testing_epochs, testing_data, "Test", path, grouped_triggers, trigger)
             
             # Test Pickles
             x_test = []
             y_test = []
-            create_pickle(testing_data, x_test, y_test, "Test", participant, trigger)
+            create_data_type_pickle(testing_data, x_test, y_test, "Test", participant, trigger)
             print("------------------------------------------------------------------------------------------------------------------------------------------------------------")
 
 # Testing a recursive implementation of training/test split
