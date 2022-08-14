@@ -74,6 +74,7 @@ def create_model(X):
 
 # Train model with K-fold cross validation with early stopping
 def kfold_cross_validation_earlystopping(model,X,y,Xtest,ytest,kfold):
+    early_stopping = EarlyStopping(monitor='val_loss', patience=3)
     cvscores = []
     for index, (train_index, validation_index) in enumerate(kfold.split(X, y)):
         print("Training on fold: " + str(index+1)+"/{}".format(KFOLD_SPLITS))
@@ -82,7 +83,7 @@ def kfold_cross_validation_earlystopping(model,X,y,Xtest,ytest,kfold):
         xtrain, xval = X[train_index], X[validation_index]
         ytrain, yval = y[train_index], y[validation_index]
 
-        history = model.fit(xtrain,ytrain, epochs=5, batch_size=10, verbose=1, validation_data=(xval,yval))
+        history = model.fit(xtrain,ytrain, epochs=5, batch_size=10, verbose=1, validation_data=(xval,yval), callbacks=[early_stopping])
         visualise_model_performance(history)
 
         scores = model.evaluate(xval, yval, verbose=1)
@@ -126,7 +127,7 @@ def run_model_on_unseen_data(model,Xtest,ytest):
     print("%s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
     return model
 
-# predict model on unseen data
+# Predict model on unseen data
 def predict_model_on_unseen_data(model,Xtest,ytest):
     y_pred = model.predict(Xtest)
     y_pred = np.argmax(y_pred, axis=1)
@@ -136,7 +137,7 @@ def predict_model_on_unseen_data(model,Xtest,ytest):
     print(confusion_matrix(y_test, y_pred))
     return model
 
-# predict model classes on unseen data
+# Predict model classes on unseen data
 # Rounded prediction? (old notes)
 def predict_model_classes_on_unseen_data(model,Xtest,ytest):
     y_pred = model.predict_classes(Xtest)
@@ -178,6 +179,7 @@ def plot_confusion_matrix(cm, classes, normalize=False, title='Confusion matrix'
     plt.xlabel('Predicted label')
     plt.show()
 
+# Main function
 def main():
     X, y, Xtest, ytest = load_data()
     model = create_model(X)
