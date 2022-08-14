@@ -8,6 +8,7 @@ The code for preprocessing as well as the Deep Learning models can be found here
 
 ### Reminders
 * [Clean kfold code example](https://towardsdatascience.com/stratified-k-fold-what-it-is-how-to-use-it-cf3d107d3ea2)
+* [pip's requirements.txt best practice](https://stackoverflow.com/questions/61536466/pips-requirements-txt-best-practice)
 
 ### GitHub
 * [William's Thesis Experiment](https://github.com/WilliamGeuns/MachineLearningDeepLearning)
@@ -25,11 +26,11 @@ The code for preprocessing as well as the Deep Learning models can be found here
     ```
 * **`Conda` create environment from `requirements.txt`**
     ```shell
-        pip freeze > requirements.txt
+        conda create --name <environment_name> --file requirements.txt
     ```
 * **`Conda` install `requirements.txt` into current environment**
     ```shell
-        pip freeze > requirements.txt
+        conda install --file requirements.txt
     ```
 
 ---
