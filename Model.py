@@ -13,9 +13,6 @@ from keras.layers import Dense, Dropout, Activation, Flatten, Conv2D, MaxPooling
 from keras.models import load_model, Sequential
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import StratifiedKFold
-from sklearn.model_selection import train_test_split
-
-from .Convert_CSV_to_Pickles import Participants
 
 EXPERIMENT = "Purple"
 CATEGORIES = ['Lavendar','Full Screen','Word']
