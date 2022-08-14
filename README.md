@@ -3,6 +3,35 @@ Deep Learning applied to EEG signals of semantic categorization.
 
 The code for preprocessing as well as the Deep Learning models can be found here.
 
+--- 
+## Links
+
+### Reminders
+* [Clean kfold code example](https://towardsdatascience.com/stratified-k-fold-what-it-is-how-to-use-it-cf3d107d3ea2)
+
+### GitHub
+* [William's Thesis Experiment](https://github.com/WilliamGeuns/MachineLearningDeepLearning)
+* [Siobhan's Thesis Experiment](https://github.com/smhall97/Masters_EEG_FreeWill)
+
+### Setup
+* [Using Keras & Tensorflow with AMD GPU](https://stackoverflow.com/questions/37892784/using-keras-tensorflow-with-amd-gpu)
+* [A shell script to install AMDGPU-PRO OpenCL driver](https://gist.github.com/kytulendu/3351b5d0b4f947e19df36b1ea3c95cbe)
+
+## Configuration
+
+* **Save libraries and dependancies to `requirements.txt`**
+    ```shell
+        pip freeze > requirements.txt
+    ```
+* **`Conda` create environment from `requirements.txt`**
+    ```shell
+        pip freeze > requirements.txt
+    ```
+* **`Conda` install `requirements.txt` into current environment**
+    ```shell
+        pip freeze > requirements.txt
+    ```
+
 ---
 
 The below are notes I made whilst refactoring the project
