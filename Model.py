@@ -1,50 +1,44 @@
-# -*- coding: utf-8 -*-
 """
-Created on Mon Oct  1 22:10:52 2018
-
-@author: William
+Created on Mon Oct 01 22:10:52 2018
+Updated on Sun Aug 14 18:22:12 2022
+Authors: William & Ben
 """
-import pickle
-import numpy as np
-from sklearn.model_selection import StratifiedKFold
-from keras.models import Sequential
-from keras.layers import Dense, Dropout, Activation, Flatten
-from keras.layers import Conv2D, MaxPooling2D
-from keras.callbacks import TensorBoard , EarlyStopping
 import itertools
-from keras.models import load_model
-from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
-#from sklearn.metrics import confusion_matrix
-#import itertools
-#import matplotlib.pyplot as plt
+import numpy as np
+import pickle
 
-NAME = "CNN train 20 4 Architecture"
-# Loading training data from preprocessing
-# Change these numbers
-pickle_in = open("X_train_20_4.pickle","rb")
-X = pickle.load(pickle_in)
-pickle_in = open("y_train_20_4.pickle","rb")
-y = pickle.load(pickle_in)
+from keras.callbacks import EarlyStopping
+from keras.layers import Dense, Dropout, Activation, Flatten, Conv2D, MaxPooling2D
+from keras.models import load_model, Sequential
+from sklearn.metrics import confusion_matrix
+from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import train_test_split
 
-# Change these numbers
-pickle_in = open("X_test_20_4.pickle","rb")
-X_test = pickle.load(pickle_in)
-pickle_in = open("y_test_20_4.pickle","rb")
-y_test = pickle.load(pickle_in)
+from .Convert_CSV_to_Pickles import Participants
 
-CATEGORIES = ['Roman numeral','Word','digit']
+EXPERIMENT = "Purple"
+CATEGORIES = ['Lavendar','Full Screen','Word']
+PARTICIPANTS = {0: "All", 1: "Single"}
+NAME = f"{EXPERIMENT}-{PARTICIPANTS}_participant(s)"
+KFOLD_SPLITS=2
 
-# KFold pick your folds here
-kfold_splits=3
-skf = StratifiedKFold(n_splits=kfold_splits, shuffle=True)
-y = np.transpose(y)
+# Load preprocessed training/test pickles
+def load_data():
+    with open(f"{EXPERIMENT}-X-Training.pickle", 'rb') as f:
+        X = pickle.load(f)
+    with open(f"{EXPERIMENT}-Y-Training.pickle", 'rb') as f:
+        y = pickle.load(f)
+        y = np.transpose(y)
+    with open(f"{EXPERIMENT}-X-Test.pickle", 'rb') as f:
+        Xtest = pickle.load(f)
+    with open(f"{EXPERIMENT}-Y-Test.pickle", 'rb') as f:
+        ytest = pickle.load(f)
+    return X, y, Xtest, ytest
 
-def create_model():
-    # Give it unique name for tensorboard and also save
-   
+# Create model 
+def create_model(X):
     model = Sequential()
-         
     model.add(Conv2D(512, (3, 3), input_shape=X.shape[1:]))
     model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
@@ -81,85 +75,89 @@ def create_model():
                       metrics=['accuracy'])
     return model
 
-def train_model(model,xtrain,ytrain,xval,yval):
-                
-    # Preventing overfitting through 'earlystopping' it will monitor val_loss and stop
-    # computing when val_loss goes up even though there are more epochs
-    #earlystopping = EarlyStopping(monitor= 'val_loss',
-    #                             min_delta = 0, 
-    #                              patience= 2, 
-    #                              verbose = 0, 
-    #                              mode ='auto'
-    #                              )
-    
-    accuracy= model.fit(xtrain,ytrain,
-              epochs = 8, 
-              validation_data= (xval,yval),
-              batch_size=10,
-              shuffle=True
-              )    
-    return accuracy
+# Train model with K-fold cross validation with early stopping
+def kfold_cross_validation_earlystopping(model,X,y,Xtest,ytest,kfold):
+    cvscores = []
+    for index, (train_index, validation_index) in enumerate(kfold.split(X, y)):
+        print("Training on fold: " + str(index+1)+"/{}".format(KFOLD_SPLITS))
+        
+        #Generate batches
+        xtrain, xval = X[train_index], X[validation_index]
+        ytrain, yval = y[train_index], y[validation_index]
 
-Total_accuracy = []
-for index, (train_indices, val_indices) in enumerate(skf.split(X,y)):
-    print("Training on fold: " + str(index+1)+"/{}".format(kfold_splits))
-    
-    #Generate batches
-    xtrain, xval = X[train_indices], X[val_indices]
-    ytrain, yval = y[train_indices], y[val_indices]
+        history = model.fit(xtrain,ytrain, epochs=5, batch_size=10, verbose=1, validation_data=(xval,yval))
+        visualise_model_performance(history)
 
-    # Clear model, and create it
-    model = None
-    model = create_model()
+        scores = model.evaluate(xval, yval, verbose=1)
+        print("%s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
+        cvscores.append(scores[1] * 100)
+    print("%.2f%% (+/- %.2f%%)" % (np.mean(cvscores), np.std(cvscores)))
+    return model
 
-    # Debug message I guess
-    print ("Training new iteration on " + str(xtrain.shape[0]) + " training samples, " 
-    + str(xval.shape[0]) + " validation samples, this may be a while...")
-    
-    
-    history = train_model(model, xtrain, ytrain, xval, yval)
-    accuracy_history = history.history['acc']
-    val_accuracy_history = history.history['val_acc']
-    print ("Last training accuracy: " + str(accuracy_history[-1]) 
-    + ", last validation accuracy: " + str(val_accuracy_history[-1]))
-    
-    
-    Total_accuracy.append(val_accuracy_history[-1])
+# Save model to disk
+def save_model(model):
+    model.save(EXPERIMENT)
+    print("Saved model to disk")
 
-accuracy_Array = np.asarray(Total_accuracy)
-print("%.2f%% (+/- %.2f%%)" % (np.mean(accuracy_Array*100), np.std(accuracy_Array*100)))
-print(accuracy_Array)
+# Visualise model performance
+def visualise_model_performance(history):
+    plt.plot(history.history['accuracy'])
+    plt.plot(history.history['val_accuracy'])
+    plt.title('Model accuracy')
+    plt.ylabel('Accuracy')
+    plt.xlabel('Epoch')
+    plt.legend(['Train', 'Test'], loc='upper left')
+    plt.show()
+    plt.plot(history.history['loss'])
+    plt.plot(history.history['val_loss'])
+    plt.title('Model loss')
+    plt.ylabel('Loss')
+    plt.xlabel('Epoch')
+    plt.legend(['Train', 'Test'], loc='upper left')
+    plt.show()
+    return None
 
-# If you need to test again after you can use this save
-# model = model_load(NAME)
-model.save(NAME)
+# Predict model performance
+def predict_model_performance(model, Xval, yval):
+    scores = model.evaluate(Xval, yval, verbose=1)
+    print("%s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
+    return model
 
-# Loading the trained model for testing 
-#model = load_model("NAME")
+# Run model on unseen data
+def run_model_on_unseen_data(model,Xtest,ytest):
+    scores = model.evaluate(Xtest, ytest, verbose=1)
+    print("%s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
+    return model
 
-# Letting the above trained model predict on unseen data 
-prediction = model.predict(X_test, batch_size=10, verbose=0)
-# Visualizing these predictions
-for i in prediction:
-    print(i)
+# predict model on unseen data
+def predict_model_on_unseen_data(model,Xtest,ytest):
+    y_pred = model.predict(Xtest)
+    y_pred = np.argmax(y_pred, axis=1)
+    y_test = np.argmax(ytest, axis=1)
+    cm = confusion_matrix(y_test, y_pred)
+    print(cm)
+    print(confusion_matrix(y_test, y_pred))
+    return model
 
-# Rounding the prediction to the classes
-rounded_prediction = model.predict_classes(X_test, batch_size=10, verbose=0)
-# Visualizing the best model
-for i in rounded_prediction:
-    print(i)
+# predict model classes on unseen data
+# Rounded prediction? (old notes)
+def predict_model_classes_on_unseen_data(model,Xtest,ytest):
+    y_pred = model.predict_classes(Xtest)
+    y_pred = np.argmax(y_pred, axis=1)
+    y_test = np.argmax(ytest, axis=1)
+    cm = confusion_matrix(y_test, y_pred)
+    print(cm)
+    print(confusion_matrix(y_test, y_pred))
+    return cm
 
-# Confusion matrix to visualize how the model was performing SKLEARN
-def plot_confusion_matrix(cm, classes,
-                          normalize=False,
-                          title='Confusion matrix',
-                          cmap=plt.cm.Blues):
+# Confusion matrix
+def plot_confusion_matrix(cm, classes, normalize=False, title='Confusion matrix', cmap=plt.cm.Blues):
     """
     This function prints and plots the confusion matrix.
     Normalization can be applied by setting `normalize=True`.
     """
     if normalize:
-        cm = cm.astype('float32') / cm.sum(axis=1)[:, np.newaxis]
+        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
         print("Normalized confusion matrix")
     else:
         print('Confusion matrix, without normalization')
@@ -176,26 +174,38 @@ def plot_confusion_matrix(cm, classes,
     fmt = '.2f' if normalize else 'd'
     thresh = cm.max() / 2.
     for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
-        plt.text(j, i, format(cm[i, j], fmt),
-                 horizontalalignment="center",
-                 color="white" if cm[i, j] > thresh else "black")
+        plt.text(j, i, format(cm[i, j], fmt), horizontalalignment="center", color="white" if cm[i, j] > thresh else "black")
 
+    plt.tight_layout()
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
-    plt.tight_layout()
+    plt.show()
 
-# Compute confusion matrix
-cnf_matrix = confusion_matrix(y_test, rounded_prediction)
-np.set_printoptions(precision=2)
+def main():
+    X, y, Xtest, ytest = load_data()
+    model = create_model(X)
+    kfold = StratifiedKFold(n_splits=KFOLD_SPLITS, shuffle=True, random_state=42)
+    model = kfold_cross_validation_earlystopping(model,X,y,Xtest,ytest,kfold)
+    save_model(model)
+    run_model_on_unseen_data(model,Xtest,ytest)
+    cm = predict_model_on_unseen_data(model,Xtest,ytest)
+    plot_confusion_matrix(cm, classes=CATEGORIES, normalize=False, title='Confusion matrix, without normalization')
+    plot_confusion_matrix(cm, classes=CATEGORIES, normalize=True, title='Confusion matrix')
+    cm = None
+    cm = predict_model_classes_on_unseen_data(model,Xtest,ytest)
+    plot_confusion_matrix(cm, classes=CATEGORIES, normalize=False, title='Confusion matrix, without normalization')
+    plot_confusion_matrix(cm, classes=CATEGORIES, normalize=True, title='Confusion matrix')
 
-# Plot non-normalized confusion matrix
-plt.figure()
-plot_confusion_matrix(cnf_matrix, classes=CATEGORIES,
-                      title='Confusion matrix, without normalization')
+if __name__ == '__main__':
+    main()
+    print("Done")
 
-# Plot normalized confusion matrix
-plt.figure()
-plot_confusion_matrix(cnf_matrix, classes=CATEGORIES, normalize=True,
-                      title='Normalized confusion matrix')
-plt.show()
-model.summary()
+# ----------------------------------------------------------------------------------------------------------------------
+# Miscelaneous fiddling
+# ----------------------------------------------------------------------------------------------------------------------
+
+# Load model from disk
+def load_model():
+    model = load_model(EXPERIMENT)
+    print("Loaded model from disk")
+    return model
