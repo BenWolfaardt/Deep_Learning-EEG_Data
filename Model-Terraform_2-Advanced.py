@@ -14,6 +14,7 @@ Multiple GPUs, Machines, TPUs implementation:
 import numpy as np
 import pickle
 import tensorflow as tf
+import datetime
 
 from tensorflow.python.keras import Model, layers
 
@@ -88,57 +89,72 @@ class MyModel(Model):
 
 # Main function
 def main():
-    train_ds, val_ds = load_data()
+    training_ds, validation_ds = load_data()
     model = MyModel()
 
+    # Selected loss and optimizer:
     loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False)
     optimizer = tf.keras.optimizers.Adam()
 
-    training_loss = tf.keras.metrics.Mean(name='training_loss', dtype=None)
+    # Define our metrics
+    training_loss = tf.keras.metrics.Mean(name='training_loss', dtype=tf.float32)
     training_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(name='train_accuracy')
-    
-    test_loss = tf.keras.metrics.Mean(name='test_loss', dtype=None)
-    test_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(name='test_accuracy', dtype=None)
+    validation_loss = tf.keras.metrics.Mean(name='test_loss', dtype=tf.float32)
+    validation_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(name='test_accuracy')
 
     @tf.function
-    def training_step(epochs, labels):
+    def training_step(model, optimizer, x_train, y_train): # where x = epochs, and y = labes
         with tf.GradientTape() as tape:
-            predictions = model(epochs)
-            loss = loss_object(labels, predictions)
+            predictions = model(x_train, training=True)
+            loss = loss_object(y_train, predictions)
         gradients = tape.gradient(loss, model.trainable_variables)
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
 
         training_loss(loss)
-        training_accuracy(labels, predictions)
+        training_accuracy(y_train, predictions)
 
     @tf.function
-    def test_step(epochs, labels):
-        predictions = model(epochs)
-        t_loss = loss_object(labels, predictions)
+    def validation_step(model, x_test, y_test):
+        predictions = model(x_test)
+        loss = loss_object(y_test, predictions)
 
-        test_loss(t_loss)
-        test_accuracy(labels, predictions)
+        validation_loss(loss)
+        validation_accuracy(y_test, predictions)
+
+    current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    training_log_dir = 'logs/gradient_tape/' + current_time + '/training'
+    test_log_dir = 'logs/gradient_tape/' + current_time + '/test'
+    train_summary_writer = tf.summary.create_file_writer(training_log_dir)
+    test_summary_writer = tf.summary.create_file_writer(test_log_dir)
 
     for epoch in range(EPOCHS):
-        training_loss.reset_states()
-        training_accuracy.reset_states()
-        test_loss.reset_states()
-        test_accuracy.reset_states()
+        for (x_train, y_train) in training_ds:
+            training_step(model, optimizer, x_train, y_train)
+        with train_summary_writer.as_default():
+            tf.summary.scalar('loss', training_loss.result(), step=epoch)
+            tf.summary.scalar('accuracy', training_accuracy.result(), step=epoch)
 
-        for epochs, labels in train_ds:
-            training_step(epochs, labels)
-
-        for test_epochs, test_labels in val_ds:
-            test_step(test_epochs, test_labels)
+        for (x_val, y_val) in validation_ds:
+            validation_step(model, x_val, y_val)
+        with test_summary_writer.as_default():
+            tf.summary.scalar('loss', validation_loss.result(), step=epoch)
+            tf.summary.scalar('accuracy', validation_accuracy.result(), step=epoch)
 
         template = 'Epoch {}, Loss: {}, Accuracy: {}, Test Loss: {}, Test Accuracy: {}'
         print(template.format(
             epoch+1,
             training_loss.result(),
             training_accuracy.result()*100,
-            test_loss.result(),
-            test_accuracy.result()*100
+            validation_loss.result(),
+            validation_accuracy.result()*100
         ))
+
+        # Reset metrics every epcoh
+        training_loss.reset_states()
+        training_accuracy.reset_states()
+        validation_loss.reset_states()
+        validation_accuracy.reset_states()
+       
 
 if __name__ == '__main__':
     main()
