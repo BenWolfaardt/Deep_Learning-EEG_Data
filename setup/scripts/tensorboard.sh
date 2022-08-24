@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# TODO source the activation script more generically
 source /opt/miniconda3/bin/activate ./env/
 wait
 
