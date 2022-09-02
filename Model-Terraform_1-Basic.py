@@ -14,87 +14,109 @@ from keras.models import load_model, Sequential
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import StratifiedKFold
 
-EXPERIMENT = "Purple"
-CATEGORIES = ['Lavendar','Full Screen','Word']
+EXPERIMENT = "Siobhan"
+TRIGGERS = ['Left','Right']
 PARTICIPANTS = {0: "All", 1: "Single"}
 NAME = f"{EXPERIMENT}-{PARTICIPANTS}_participant(s)"
-KFOLD_SPLITS=2
+KFOLD_SPLITS=5
 
 # Load preprocessed training/test pickles
 def load_data():
-    with open(f"{EXPERIMENT}-X-Training.pickle", 'rb') as f:
-        X = pickle.load(f)
-    with open(f"{EXPERIMENT}-Y-Training.pickle", 'rb') as f:
+    with open(f"X-Training.pickle", 'rb') as f:
+        X = pickle.load(f) # shape: (1369, 63, 450, 1)
+    with open(f"Y-Training.pickle", 'rb') as f:
         y = pickle.load(f)
         y = np.transpose(y)
-    with open(f"{EXPERIMENT}-X-Test.pickle", 'rb') as f:
-        Xtest = pickle.load(f)
-    with open(f"{EXPERIMENT}-Y-Test.pickle", 'rb') as f:
+    with open(f"X-Test.pickle", 'rb') as f:
+        Xtest = pickle.load(f) # shape: (158, 63, 450, 1)
+    with open(f"Y-Test.pickle", 'rb') as f:
         ytest = pickle.load(f)
     return X, y, Xtest, ytest
 
 # Create model 
-def create_model(X):
+def create_model(X) -> Sequential():
     model = Sequential()
-    model.add(Conv2D(512, (3, 3), input_shape=X.shape[1:]))
+    model.add(Conv2D(256, (3, 3), input_shape=X.shape[1:])) # input_shape: (63, 450, 1)
     model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
     
-    model.add(Conv2D(512, (3, 3)))
+    model.add(Conv2D(128, (3, 3)))
     model.add(Activation('relu')) 
     
-    model.add(Conv2D(256, (3, 3)))
+    model.add(Conv2D(64, (3, 3)))
     model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
     model.add(Dropout(0.2))
     
-    model.add(Conv2D(48, (3, 3)))
+    model.add(Conv2D(32, (3, 3)))
     model.add(Activation('relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
     model.add(Dropout(0.2))
         
     model.add(Flatten())   
     
-    model.add(Dense(36))
+    model.add(Dense(32))
     model.add(Activation('relu'))
     
-    model.add(Dense(18))
+    model.add(Dense(16))
     model.add(Activation('relu'))
     model.add(Dropout(0.2)) 
     
     # Last dense 1ayers must have number of classes in data in the parenthesis
     # Also must be softmax
-    model.add(Dense(3))
-    model.add(Activation('softmax'))
+    model.add(Dense(2))
+    # For a binary classification you should have a sigmoid last layer
+    # See 2nd answer for more details: https://stackoverflow.com/questions/68776790/model-predict-classes-is-deprecated-what-to-use-instead
+    model.add(Activation('sigmoid'))
 
     model.compile(loss='sparse_categorical_crossentropy',
                       optimizer='adam',
                       metrics=['accuracy'])
+
+    print(model.summary())
+
     return model
 
 # Train model with K-fold cross validation with early stopping
-def kfold_cross_validation_earlystopping(model,X,y,Xtest,ytest,kfold):
+def kfold_cross_validation_earlystopping(
+    model: Sequential(),
+    X,
+    y,
+    kfold: StratifiedKFold,
+) -> Sequential():
     early_stopping = EarlyStopping(monitor='val_loss', patience=3)
     cvscores = []
     for index, (train_index, validation_index) in enumerate(kfold.split(X, y)):
         print("Training on fold: " + str(index+1)+"/{}".format(KFOLD_SPLITS))
         
         #Generate batches
-        xtrain, xval = X[train_index], X[validation_index]
+        Xtrain, Xval = X[train_index], X[validation_index]
         ytrain, yval = y[train_index], y[validation_index]
 
-        history = model.fit(xtrain,ytrain, epochs=5, batch_size=10, verbose=1, validation_data=(xval,yval), callbacks=[early_stopping])
-        visualise_model_performance(history)
+        # Xtrain = np.asarray(Xtrain)
+        # ytrain = np.asarray(ytrain)
+        # Xval = np.asarray(Xval)
+        # yval = np.asarray(yval)
 
-        scores = model.evaluate(xval, yval, verbose=1)
-        print("%s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
-        cvscores.append(scores[1] * 100)
-    print("%.2f%% (+/- %.2f%%)" % (np.mean(cvscores), np.std(cvscores)))
-    return model
+        history = model.fit(Xtrain,ytrain, epochs=20, batch_size=10, verbose=1, validation_data=(Xval,yval), callbacks=[early_stopping], shuffle=True)
+        accuracy_history = history.history['accuracy']
+        val_accuracy_history = history.history['val_accuracy']
+        print ("Last training accuracy: " + str(accuracy_history[-1]) 
+        + ", last validation accuracy: " + str(val_accuracy_history[-1]))
+
+
+    #     visualise_model_performance(history)
+
+    #     scores = model.evaluate(xval, yval, verbose=1)
+    #     print("%s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
+    #     cvscores.append(scores[1] * 100)
+    # print("%.2f%% (+/- %.2f%%)" % (np.mean(cvscores), np.std(cvscores)))
+    save_model(model)
+    return model, Xval, yval
 
 # Save model to disk
-def save_model(model):
-    model.save(EXPERIMENT)
+def save_model(model: Sequential()) -> None:
+    model.save(f"{EXPERIMENT}.h5")
     print("Saved model to disk")
 
 # Visualise model performance
@@ -129,13 +151,8 @@ def run_model_on_unseen_data(model,Xtest,ytest):
 
 # Predict model on unseen data
 def predict_model_on_unseen_data(model,Xtest,ytest):
-    y_pred = model.predict(Xtest)
-    y_pred = np.argmax(y_pred, axis=1)
-    y_test = np.argmax(ytest, axis=1)
-    cm = confusion_matrix(y_test, y_pred)
-    print(cm)
-    print(confusion_matrix(y_test, y_pred))
-    return model
+    cm = generate_confussion_matrix(model,Xtest,ytest)
+    plot_confusion_matrix(cm, classes=TRIGGERS, normalize=True)
 
 # Predict model classes on unseen data
 # Rounded prediction? (old notes)
@@ -149,34 +166,41 @@ def predict_model_classes_on_unseen_data(model,Xtest,ytest):
     return cm
 
 # Confusion matrix
-def plot_confusion_matrix(cm, classes, normalize=False, title='Confusion matrix', cmap=plt.cm.Blues):
-    """
-    This function prints and plots the confusion matrix.
-    Normalization can be applied by setting `normalize=True`.
-    """
+def generate_confussion_matrix(model, X_test, y_test):
+    predictions = (model.predict(X_test, batch_size=10, verbose=0) > 0.9).astype("int32")
+    predictions = np.argmax(predictions, axis=1)
+
+    return confusion_matrix(predictions, y_test)
+
+def plot_confusion_matrix(cm, normalize, classes):
+    # Print the confusion matrix as text.
     if normalize:
         cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
-        print("Normalized confusion matrix")
+        title = "Normalised Confusion Natrix"
+        print(title)
     else:
-        print('Confusion matrix, without normalization')
-
+        title = "Non-normalised Confusion Natrix"
+        print(title)
+    
     print(cm)
 
-    plt.imshow(cm, interpolation='nearest', cmap=cmap)
+    # Dispaly the confusion matrix as a plot
+    plt.matshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
     plt.title(title)
     plt.colorbar()
     tick_marks = np.arange(len(classes))
-    plt.xticks(tick_marks, classes, rotation=45)
+    plt.xticks(tick_marks, classes)
     plt.yticks(tick_marks, classes)
+    plt.xlabel('Predicted')
+    plt.ylabel('True')
+    # plt.tight_layout()
 
+    # Add values to confusion matrix
     fmt = '.2f' if normalize else 'd'
     thresh = cm.max() / 2.
     for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
         plt.text(j, i, format(cm[i, j], fmt), horizontalalignment="center", color="white" if cm[i, j] > thresh else "black")
-
-    plt.tight_layout()
-    plt.ylabel('True label')
-    plt.xlabel('Predicted label')
+ 
     plt.show()
 
 # Main function
@@ -184,16 +208,20 @@ def main():
     X, y, Xtest, ytest = load_data()
     model = create_model(X)
     kfold = StratifiedKFold(n_splits=KFOLD_SPLITS, shuffle=True, random_state=42)
-    model = kfold_cross_validation_earlystopping(model,X,y,Xtest,ytest,kfold)
+    model, Xval, yval = kfold_cross_validation_earlystopping(model,X,y,kfold)
     save_model(model)
-    run_model_on_unseen_data(model,Xtest,ytest)
-    cm = predict_model_on_unseen_data(model,Xtest,ytest)
-    plot_confusion_matrix(cm, classes=CATEGORIES, normalize=False, title='Confusion matrix, without normalization')
-    plot_confusion_matrix(cm, classes=CATEGORIES, normalize=True, title='Confusion matrix')
-    cm = None
-    cm = predict_model_classes_on_unseen_data(model,Xtest,ytest)
-    plot_confusion_matrix(cm, classes=CATEGORIES, normalize=False, title='Confusion matrix, without normalization')
-    plot_confusion_matrix(cm, classes=CATEGORIES, normalize=True, title='Confusion matrix')
+
+    print("Predict model performance")
+    predict_model_performance(model, Xval, yval)
+    # print("Run model on unseen data")
+    # run_model_on_unseen_data(model,Xtest,ytest)
+    predict_model_on_unseen_data(model, Xtest, ytest)
+
+
+    # cm = None
+    # cm = predict_model_classes_on_unseen_data(model,Xtest,ytest)
+    # plot_confusion_matrix(cm, classes=CATEGORIES, normalize=False, title='Confusion matrix, without normalization')
+    # plot_confusion_matrix(cm, classes=CATEGORIES, normalize=True, title='Confusion matrix')
 
 if __name__ == '__main__':
     main()
