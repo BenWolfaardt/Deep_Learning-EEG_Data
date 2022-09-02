@@ -1,10 +1,10 @@
 #!/bin/bash
 
-conda create --prefix ./env python=3.8 
+conda create --prefix ./env python=3.9
 conda activate ./env
 conda install -c apple tensorflow-deps
 python -m pip install pip-tools
-pip-compile --output-file=- > requirements.txt
+# pip-compile --output-file=- > requirements.txt
 GRPC_PYTHON_BUILD_SYSTEM_OPENSSL=1 GRPC_PYTHON_BUILD_SYSTEM_ZLIB=1 pip install grpcio==1.47.0
 pip install -r requirements.txt
 
