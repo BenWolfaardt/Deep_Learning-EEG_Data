@@ -3,3 +3,6 @@ env/
 
 # Logs
 logs/
+
+# MacOS things
+.DS_Store
