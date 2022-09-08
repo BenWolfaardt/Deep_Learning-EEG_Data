@@ -18,6 +18,7 @@ COMPARISON = {0: "All", 1: "Single"}
 PARTICIPANTS = ["2"]
 # PARTICIPANTS = [2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]
 NAME = f"{EXPERIMENT}_{COMPARISON[1]}-{PARTICIPANTS[0]}"
+DIRECTORY_PICKLE_DATA_OUTPUT = "/Users/james.wolfaardt/code/__ben/Code/Deep_Learning-EEG_Data/outputs/pickles"
 KFOLD_SPLITS=5
 EPOCHS=20
 
@@ -27,10 +28,10 @@ class Create:
 
     # Load preprocessed training/test pickles
     def load_data(self)  -> tuple[NDArray, NDArray]:
-        with open(f"X-Training.pickle", 'rb') as f:
+        with open(f"{DIRECTORY_PICKLE_DATA_OUTPUT}/X-Training.pickle", 'rb') as f:
             X = pickle.load(f) # shape: (1369, 63, 450, 1)
             X = np.asarray(X)
-        with open(f"Y-Training.pickle", 'rb') as f:
+        with open(f"{DIRECTORY_PICKLE_DATA_OUTPUT}/Y-Training.pickle", 'rb') as f:
             y = pickle.load(f) # shape: (
             y = np.transpose(y)
         return X, y
