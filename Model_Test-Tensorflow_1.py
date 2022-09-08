@@ -12,12 +12,13 @@ from keras.models import load_model, Sequential
 from nptyping import NDArray, Shape, Float64
 from numpy.core.shape_base import block
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
-from typing import Tuple
 
 EXPERIMENT = "Siobhan"
 TRIGGERS = ['Left','Right']
-PARTICIPANTS = {0: "All", 1: "Single"}
-NAME = f"{EXPERIMENT}-{PARTICIPANTS}_participant(s)"
+PARTICIPANTS = ["2"]
+# PARTICIPANTS = [2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]
+COMPARISON = {0: "All", 1: "Single"}
+NAME = f"{EXPERIMENT}_{COMPARISON[1]}-{PARTICIPANTS[0]}"
 KFOLD_SPLITS=5
 
 class Test:
@@ -26,12 +27,14 @@ class Test:
     
     # Load test pickles (unseen)
     # TODO is this a dynamic shape dependant on pickle?
-    def load_data(self) -> Tuple[NDArray[Shape['24,128,257,1'], Float64], NDArray[Shape['1'], Float64]]:
+    # def load_data(self) -> tuple[NDArray[Shape['24,128,257,1'], Float64], NDArray[Shape['1'], Float64]]:
+    def load_data(self) -> tuple[NDArray, NDArray]:
         with open(f"X-Test.pickle", 'rb') as f:
             Xtest = pickle.load(f) # shape: (24, 128, 257, 1) - Participant: 2
+            Xtest = np.asarray(Xtest)
         with open(f"Y-Test.pickle", 'rb') as f:
             ytest = pickle.load(f) # len: 24
-        print("Pickles loaded")
+            ytest = np.asarray(ytest)
         return Xtest, ytest
 
     # Load model
@@ -40,11 +43,7 @@ class Test:
         print("Model Loaded")
         return model
 
-    # Predict model performance
-    def predict_model_performance(self, model, Xval, yval) -> None:
-        scores = model.evaluate(Xval, yval, verbose=1)
-        print("%s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
-
+    # TODO tidy up
     # Run model on unseen data
     def run_model_on_unseen_data(self, model, Xtest, ytest)  -> None:
         scores = model.evaluate(Xtest, ytest, verbose=1)
@@ -90,11 +89,12 @@ class Test:
         for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
             plt.text(j, i, format(cm[i, j], fmt), horizontalalignment="center", color="white" if cm[i, j] > thresh else "black")
     
-        plt.show()
+        plt.show(block=True)
 
     def setup_and_test_data(self) -> None:
         Xtest, ytest = self.load_data()
-        model = self.load_model(f"{EXPERIMENT}.h5")
+        model = self.load_model(f"{NAME}.h5")
+        self.run_model_on_unseen_data(model, Xtest, ytest)
         self.predict_model_on_unseen_data(model, Xtest, ytest, classes=False)
         # TODO test the below on a TensorFlow 1 setup
         # self.predict_model_on_unseen_data(self, model, Xtest, ytest, classes=True)
