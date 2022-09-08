@@ -9,6 +9,8 @@ Inspiration for architecture taken from:
 Multiple GPUs, Machines, TPUs implementation: 
 - https://colab.research.google.com/github/tensorflow/docs/blob/master/site/en/tutorials/distribute/custom_training.ipynb
 - https://colab.research.google.com/github/tensorflow/docs/blob/master/site/en/guide/tpu.ipynb#scrollTo=mgUC6A-zCMEr
+Using Tensorboard
+- https://www.tensorflow.org/tensorboard/get_started
 """
 
 import numpy as np
@@ -18,19 +20,19 @@ import datetime
 
 from tensorflow.python.keras import Model, layers
 
-EXPERIMENT = "Purple"
-EPOCHS=5
+EXPERIMENT = "Siobhan"
+EPOCHS=50
 
 # Load preprocessed training/test pickles
 def load_data():
-    with open(f"{EXPERIMENT}-X-Training.pickle", 'rb') as f:
+    with open(f"X-Training.pickle", 'rb') as f:
         X = pickle.load(f) # Shape: (1369, 63, 450, 1)
-    with open(f"{EXPERIMENT}-Y-Training.pickle", 'rb') as f:
+    with open(f"Y-Training.pickle", 'rb') as f:
         y = pickle.load(f)
         y = np.transpose(y) # Shape: (1369,)
-    with open(f"{EXPERIMENT}-X-Test.pickle", 'rb') as f:
+    with open(f"X-Test.pickle", 'rb') as f:
         X_val = pickle.load(f) # Shape: (158, 63, 450, 1)
-    with open(f"{EXPERIMENT}-Y-Test.pickle", 'rb') as f:
+    with open(f"Y-Test.pickle", 'rb') as f:
         y_val = pickle.load(f)
         y_val = np.transpose(y_val) # Shape: (158,)
 
@@ -45,25 +47,25 @@ class MyModel(Model):
         super(MyModel, self).__init__()
         # https://www.tensorflow.org/api_docs/python/tf/keras/layers/Conv2D
         self.conv1 = layers.Conv2D(
-            filters=512,
+            filters=128,
             kernel_size=(3,3),
-            input_shape=(63, 450, 1),
+            input_shape=(128, 257, 1),
             padding='same',
             activation=tf.nn.relu
         )
         self.conv2 = layers.Conv2D(
-            filters=512, kernel_size=(3,3), padding='same', activation=tf.nn.relu
+            filters=128, kernel_size=(3,3), padding='same', activation=tf.nn.relu
         )
         self.conv3 = layers.Conv2D(
-            filters=256, kernel_size=(3,3), padding='same', activation=tf.nn.relu
+            filters=32, kernel_size=(3,3), padding='same', activation=tf.nn.relu
         )
         self.conv4 = layers.Conv2D(
-            filters=48, kernel_size=(3,3), padding='same', activation=tf.nn.relu
+            filters=16, kernel_size=(3,3), padding='same', activation=tf.nn.relu
         )
         # https://www.tensorflow.org/api_docs/python/tf/keras/layers/Dense
-        self.dense1 = layers.Dense(36, activation=tf.nn.relu)
-        self.dense2 = layers.Dense(18, activation=tf.nn.relu)
-        self.dense3 = layers.Dense(3, activation=tf.nn.softmax)
+        self.dense1 = layers.Dense(16, activation=tf.nn.relu)
+        self.dense2 = layers.Dense(8, activation=tf.nn.relu)
+        self.dense3 = layers.Dense(2, activation=tf.nn.sigmoid)
         # https://www.tensorflow.org/api_docs/python/tf/keras/layers/Flatten
         self.flatten = layers.Flatten()
         # https://www.tensorflow.org/api_docs/python/tf/keras/layers/MaxPool2D
