@@ -6,3 +6,9 @@ logs/
 
 # MacOS things
 .DS_Store
+
+# Cache
+__pycache__
+
+# Outputs
+outputs/
