@@ -6,6 +6,66 @@ The code for preprocessing as well as the Deep Learning models can be found here
 --- 
 ## Links
 
+### TODO 
+- Config file for all (YAMl)
+- For loop 
+  - Pickles
+    - Default folder location out put
+    - Add to .gitignore
+  - Create model 
+    - best model save (run x times and then only save new model if better than previous)
+      - Test call back for model saved
+      - Give proper name
+    - Save to specific folder
+      - add to .gitignore
+  - Confussion matrixes
+    - Save all plots named nicely to folder
+    - Create CM object with results and save as txt to easily send Dawie
+- Requirements update 
+- Scripts update 
+- Makefile
+  - per OS
+    - Automatically copy reevant requirements into default file
+  - Add tensorboard 
+    - dev normal
+
+# ------------------------------------------------------- Notes------------------------------------------------------- #
+
+# TODO Need to actually test this and add in -y flags
+
+# # The below is if oyu experience some problems with grpc
+# # conda install -n env/ grpc
+# GRPC_PYTHON_BUILD_SYSTEM_OPENSSL=1 GRPC_PYTHON_BUILD_SYSTEM_ZLIB=1 python -m pip uninstall grpcio         
+# GRPC_PYTHON_BUILD_SYSTEM_OPENSSL=1 GRPC_PYTHON_BUILD_SYSTEM_ZLIB=1 python -m pip install --no-cache-dir grpcio==1.47.0
+
+# # v2.x + needed for Mac M1
+# python -m pip uninstall tensorboard
+# python -m pip install --no-cache-dir tensorboard==2.9.1
+
+# ------------------------------------------------------- Notes------------------------------------------------------- #
+
+# # Below from the legacy setup.sh file
+
+# #!/bin/bash
+
+# # Chose OS from stdin
+# # Copy the contents of the relevant requirements.<OS>.in into requirremtne.in
+# # Generate the requirements.txt
+# # Install packages
+
+# # conda create --prefix ./env python=3.9 -y
+
+# # eval "$(conda shell.bash hook)"
+# # source conda activate base
+
+# source /Users/james.wolfaardt/miniforge3/bin/activate ./env
+# python --version
+# pip list
+
+
+### M1 Pro config
+* [How to Setup TensorFlow on Apple Silicon Macs](https://www.mrdbourke.com/setup-apple-m1-pro-and-m1-max-for-machine-learning-and-data-science/)
+
 ### Reminders
 * [Clean kfold code example](https://towardsdatascience.com/stratified-k-fold-what-it-is-how-to-use-it-cf3d107d3ea2)
 * [pip's requirements.txt best practice](https://stackoverflow.com/questions/61536466/pips-requirements-txt-best-practice)
@@ -32,7 +92,7 @@ The code for preprocessing as well as the Deep Learning models can be found here
     ```shell
         conda install --file requirements.txt
     ```
-
+conda activate env/
 ---
 
 The below are notes I made whilst refactoring the project
