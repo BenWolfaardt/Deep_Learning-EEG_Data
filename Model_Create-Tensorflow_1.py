@@ -6,7 +6,7 @@ Authors: William & Ben
 import numpy as np
 import pickle
 
-from keras.callbacks import EarlyStopping
+from keras.callbacks import EarlyStopping,  ModelCheckpoint, TensorBoard, ReduceLROnPlateau
 from keras.layers import Dense, Dropout, Activation, Flatten, Conv2D, MaxPooling2D
 from keras.models import Sequential
 from nptyping import NDArray
@@ -19,7 +19,7 @@ PARTICIPANTS = ["2"]
 # PARTICIPANTS = [2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]
 NAME = f"{EXPERIMENT}_{COMPARISON[1]}-{PARTICIPANTS[0]}"
 KFOLD_SPLITS=5
-EPOCHS=15
+EPOCHS=20
 
 class Create:
     def __init__(self) -> None:
@@ -65,8 +65,7 @@ class Create:
         model.add(Dropout(0.2)) 
         
         # Last dense 1ayers must have number of classes in data in the parenthesis
-        # Also must be softmax
-        model.add(Dense(2))
+        model.add(Dense(len(TRIGGERS)))
         # For a binary classification you should have a sigmoid last layer
         # See 2nd answer for more details: https://stackoverflow.com/questions/68776790/model-predict-classes-is-deprecated-what-to-use-instead
         model.add(Activation('sigmoid'))
@@ -75,19 +74,60 @@ class Create:
                         optimizer='adam',
                         metrics=['accuracy'])
 
-        print(model.summary())
+        # print(model.summary())
 
         return model
 
     # Train model with K-fold cross validation with early stopping
-    def kfold_cross_validation_earlystopping(
+    def kfold_cross_validation(
         self, 
         model: Sequential(),
         X,
         y,
         kfold: StratifiedKFold,
     ) -> Sequential():
-        early_stopping = EarlyStopping(monitor='val_loss', patience=3)
+        # This is the callback for writing checkpoints during training
+        path_checkpoint = 'checkpoint.keras'
+        callback_checkpoint = ModelCheckpoint(
+            filepath=path_checkpoint,
+            monitor='val_loss',
+            verbose=1,
+            save_weights_only=True,
+            save_best_only=True,
+        )
+        # This is the callback for stopping the optimization when performance worsens on the validation-set
+        callback_early_stopping = EarlyStopping(
+            monitor='val_loss',
+            patience=3, 
+            verbose=1, 
+            # restore_best_weights=True,
+        )
+        # This is the callback for writing the TensorBoard log during training.
+        callback_tensorboard = TensorBoard(
+            log_dir='./logs_new/',
+            histogram_freq=0,
+            write_graph=False,
+        )
+        # This callback reduces the learning-rate for the optimizer if the validation-loss has not improved 
+        # since the last epoch (as indicated by patience=0). The learning-rate will be reduced by multiplying 
+        # it with the given factor. We set a start learning-rate of 1e-3 above, so multiplying it by 0.1 gives 
+        # a learning-rate of 1e-4. We don't want the learning-rate to go any lower than this.
+        callback_reduce_lr = ReduceLROnPlateau(
+            monitor='val_loss',
+            factor=0.1,
+            min_lr=1e-4,
+            patience=0,
+            verbose=1,
+        )
+
+        callbacks = [
+            callback_early_stopping,
+            callback_checkpoint,
+            callback_tensorboard,
+            # callback_reduce_lr
+        ]
+
+        # tqdm_callback = TqdmCallback()
         cvscores = []
         for index, (train_index, validation_index) in enumerate(kfold.split(X, y)):
             print(f"\nTraining on fold: {str(index+1)}/{KFOLD_SPLITS}\n")
@@ -96,7 +136,7 @@ class Create:
             Xtrain, Xval = X[train_index], X[validation_index]
             ytrain, yval = y[train_index], y[validation_index]
 
-            model.fit(Xtrain,ytrain, epochs=EPOCHS, batch_size=10, verbose=1, validation_data=(Xval,yval), callbacks=[early_stopping], shuffle=True)
+            model.fit(Xtrain,ytrain, epochs=EPOCHS, batch_size=10, verbose=1, validation_data=(Xval,yval), callbacks=callbacks, shuffle=True)
             # history = model.fit(Xtrain,ytrain, epochs=EPOCHS, batch_size=10, verbose=1, validation_data=(Xval,yval), callbacks=[early_stopping], shuffle=True)
             # accuracy_history = history.history['accuracy']
             # val_accuracy_history = history.history['val_accuracy']
@@ -116,7 +156,7 @@ class Create:
         X, y, = self.load_data()
         model = self.create_model(X)
         kfold = StratifiedKFold(n_splits=KFOLD_SPLITS, shuffle=True, random_state=42)
-        model = self.kfold_cross_validation_earlystopping(model, X, y, kfold)
+        model = self.kfold_cross_validation(model, X, y, kfold)
         self.save_model(model)
 
 if __name__ == '__main__':
