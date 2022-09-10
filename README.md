@@ -8,10 +8,7 @@ The code for preprocessing as well as the Deep Learning models can be found here
 
 ### TODO 
 - [x] Update 1, 2 to class and having types
-- [ ] Update output locations
-- [ ] for loops
-- [ ] Improve try catches
-
+- [ ] Implement cli
 - [ ] Config file for all (YAMl)
   - [ ] pass variables around making use of self in self.init
     - [ ] i.e. not having to parse class and triggers around everywhere
@@ -19,8 +16,21 @@ The code for preprocessing as well as the Deep Learning models can be found here
       - [ ] maybe data split
       - [ ] keras or TF2
         - [ ] test if there is actually a difference
+- [ ] Merge all into one file
+  - [ ] Leave the original model out originally for first organise and commit
+  - [ ] add it in afterwards and test it
+    - [ ] Potentially keep seperate if library issues
 - [ ] Lint
   - [ ] Setup black , flake, etc...
+- [ ] Implemtne argparse from Makefile
+  - [ ] https://docs.python.org/3/library/argparse.html
+  - [ ] For 
+    - [ ] OS 
+    - [x] experiment selected in yaml
+- [ ] Update output locations
+- [ ] for loops
+- [ ] Improve try catches
+
 - [ ] For loop 
   - [ ] Pickles
     - [ ] Default folder location out put
@@ -36,6 +46,8 @@ The code for preprocessing as well as the Deep Learning models can be found here
 - [ ] Scripts update 
 - [ ] Makefile
   - [ ] per OS
+    - [ ] pass in the arguments when calling the python file 
+      - [ ] `python -m mdoel.py arg1 arg2 arg3`
     - [ ] Automatically copy reevant requirements into default file
   - [ ] Add tensorboard 
     - [ ] dev normal
