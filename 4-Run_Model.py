@@ -15,12 +15,14 @@ from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 
 EXPERIMENT = "Siobhan"
 TRIGGERS = ['Left','Right']
-PARTICIPANTS = ["2"]
+PARTICIPANTS = ["5"]
 # PARTICIPANTS = [2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]
 COMPARISON = {0: "All", 1: "Single"}
 NAME = f"{EXPERIMENT}_{COMPARISON[1]}-{PARTICIPANTS[0]}"
 DIRECTORY_PICKLE_DATA_OUTPUT = "/Users/james.wolfaardt/code/__ben/Code/Deep_Learning-EEG_Data/outputs/pickles"
+DIRECTORY_MODEL_DATA_OUTPUT = "/Users/james.wolfaardt/code/__ben/Code/Deep_Learning-EEG_Data/outputs/models"
 KFOLD_SPLITS=5
+participant = ["5"]
 
 class Test:
     def __init__(self) -> None:
@@ -30,17 +32,17 @@ class Test:
     # TODO is this a dynamic shape dependant on pickle?
     # def load_data(self) -> tuple[NDArray[Shape['24,128,257,1'], Float64], NDArray[Shape['1'], Float64]]:
     def load_data(self) -> tuple[NDArray, NDArray]:
-        with open(f"{DIRECTORY_PICKLE_DATA_OUTPUT}/X-Test.pickle", 'rb') as f:
+        with open(f"{DIRECTORY_PICKLE_DATA_OUTPUT}/X-{str(participant[0])}-Test.pickle", 'rb') as f:
             Xtest = pickle.load(f) # shape: (24, 128, 257, 1) - Participant: 2
             Xtest = np.asarray(Xtest)
-        with open(f"{DIRECTORY_PICKLE_DATA_OUTPUT}/Y-Test.pickle", 'rb') as f:
+        with open(f"{DIRECTORY_PICKLE_DATA_OUTPUT}/y-{str(participant[0])}-Test.pickle", 'rb') as f:
             ytest = pickle.load(f) # len: 24
             ytest = np.asarray(ytest)
         return Xtest, ytest
 
     # Load model
     def load_model(self, name) -> Sequential:
-        model = load_model(name)
+        model = load_model(f"{DIRECTORY_MODEL_DATA_OUTPUT}/{name}")
         print("Model Loaded")
         return model
 

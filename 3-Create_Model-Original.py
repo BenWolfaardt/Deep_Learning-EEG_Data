@@ -15,10 +15,13 @@ from sklearn.model_selection import StratifiedKFold
 EXPERIMENT = "Siobhan"
 TRIGGERS = ['Left','Right']
 COMPARISON = {0: "All", 1: "Single"}
-PARTICIPANTS = ["2"]
+PARTICIPANTS = ["5"]
 # PARTICIPANTS = [2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]
 NAME = f"{EXPERIMENT}_{COMPARISON[1]}-{PARTICIPANTS[0]}"
 DIRECTORY_PICKLE_DATA_OUTPUT = "/Users/james.wolfaardt/code/__ben/Code/Deep_Learning-EEG_Data/outputs/pickles"
+DIRECTORY_MODEL_DATA_OUTPUT = "/Users/james.wolfaardt/code/__ben/Code/Deep_Learning-EEG_Data/outputs/models"
+# TODO note duplicate
+participant = ["5"]
 KFOLD_SPLITS=5
 EPOCHS=20
 
@@ -28,10 +31,10 @@ class Create:
 
     # Load preprocessed training/test pickles
     def load_data(self)  -> tuple[NDArray, NDArray]:
-        with open(f"{DIRECTORY_PICKLE_DATA_OUTPUT}/X-Training.pickle", 'rb') as f:
+        with open(f"{DIRECTORY_PICKLE_DATA_OUTPUT}/X-{str(participant[0])}-Training.pickle", 'rb') as f:
             X = pickle.load(f) # shape: (1369, 63, 450, 1)
             X = np.asarray(X)
-        with open(f"{DIRECTORY_PICKLE_DATA_OUTPUT}/Y-Training.pickle", 'rb') as f:
+        with open(f"{DIRECTORY_PICKLE_DATA_OUTPUT}/y-{str(participant[0])}-Training.pickle", 'rb') as f:
             y = pickle.load(f) # shape: (
             y = np.transpose(y)
         return X, y
@@ -105,7 +108,7 @@ class Create:
         )
         # This is the callback for writing the TensorBoard log during training.
         callback_tensorboard = TensorBoard(
-            log_dir='./logs_new/',
+            log_dir='./logs/original/',
             histogram_freq=0,
             write_graph=False,
         )
@@ -151,7 +154,7 @@ class Create:
 
     # Save model to disk
     def save_model(self, model: Sequential()) -> None:
-        model.save(f"{NAME}.h5")
+        model.save(f"{DIRECTORY_MODEL_DATA_OUTPUT}/{NAME}.h5")
     
     def setup_and_test_data(self) -> None:
         X, y, = self.load_data()
