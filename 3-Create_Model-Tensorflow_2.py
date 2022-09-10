@@ -22,19 +22,19 @@ from tensorflow.python.keras import Model, layers
 
 EXPERIMENT = "Siobhan"
 EPOCHS=50
-DIRECTORY_PICKLE_DATA_OUTPUT = "/Users/james.wolfaardt/code/__ben/Code/Deep_Learning-EEG_Data/outputs/pickles"
+DIRECTORY_PICKLE_DATA_INPUT = "/Users/james.wolfaardt/code/__ben/Code/Deep_Learning-EEG_Data/outputs/pickles"
 participant = [1]
 
 # Load preprocessed training/test pickles
 def load_data():
-    with open(f"{DIRECTORY_PICKLE_DATA_OUTPUT}/X-{participant}-Training.pickle", 'rb') as f:
+    with open(f"{DIRECTORY_PICKLE_DATA_INPUT}/X-{participant}-Training.pickle", 'rb') as f:
         X = pickle.load(f) # Shape: (1369, 63, 450, 1)
-    with open(f"{DIRECTORY_PICKLE_DATA_OUTPUT}/y-{participant}-Training.pickle", 'rb') as f:
+    with open(f"{DIRECTORY_PICKLE_DATA_INPUT}/y-{participant}-Training.pickle", 'rb') as f:
         y = pickle.load(f)
         y = np.transpose(y) # Shape: (1369,)
-    with open(f"{DIRECTORY_PICKLE_DATA_OUTPUT}/X-{participant}-Test.pickle", 'rb') as f:
+    with open(f"{DIRECTORY_PICKLE_DATA_INPUT}/X-{participant}-Test.pickle", 'rb') as f:
         X_val = pickle.load(f) # Shape: (158, 63, 450, 1)
-    with open(f"{DIRECTORY_PICKLE_DATA_OUTPUT}/y-{participant}-Test.pickle", 'rb') as f:
+    with open(f"{DIRECTORY_PICKLE_DATA_INPUT}/y-{participant}-Test.pickle", 'rb') as f:
         y_val = pickle.load(f)
         y_val = np.transpose(y_val) # Shape: (158,)
 
