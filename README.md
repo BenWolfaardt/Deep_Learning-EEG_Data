@@ -41,39 +41,44 @@ The code for preprocessing as well as the Deep Learning models can be found here
     - [ ] dev normal
   - [ ] Run all the steps (for the py files 1 - 4) and have them dependant on the previous
 
-# ------------------------------------------------------- Notes------------------------------------------------------- #
+<!-- ------------------------------------------------------- Notes------------------------------------------------------- -->
 
-# TODO Need to actually test this and add in -y flags
+- TODO Need to actually test this and add in -y flags
 
-# # The below is if oyu experience some problems with grpc
-# # conda install -n env/ grpc
-# GRPC_PYTHON_BUILD_SYSTEM_OPENSSL=1 GRPC_PYTHON_BUILD_SYSTEM_ZLIB=1 python -m pip uninstall grpcio         
-# GRPC_PYTHON_BUILD_SYSTEM_OPENSSL=1 GRPC_PYTHON_BUILD_SYSTEM_ZLIB=1 python -m pip install --no-cache-dir grpcio==1.47.0
+```bash
+# The below is if oyu experience some problems with grpc
+# conda install -n env/ grpc
+GRPC_PYTHON_BUILD_SYSTEM_OPENSSL=1 GRPC_PYTHON_BUILD_SYSTEM_ZLIB=1 python -m pip uninstall grpcio         
+GRPC_PYTHON_BUILD_SYSTEM_OPENSSL=1 GRPC_PYTHON_BUILD_SYSTEM_ZLIB=1 python -m pip install --no-cache-dir grpcio==1.47.0
 
-# # v2.x + needed for Mac M1
-# python -m pip uninstall tensorboard
-# python -m pip install --no-cache-dir tensorboard==2.9.1
+# v2.x + needed for Mac M1
+python -m pip uninstall tensorboard
+python -m pip install --no-cache-dir tensorboard==2.9.1
+```
 
-# ------------------------------------------------------- Notes------------------------------------------------------- #
+<!-- ------------------------------------------------------- Notes------------------------------------------------------- -->
 
-# # Below from the legacy setup.sh file
+-  Below from the legacy setup.sh file
 
-# #!/bin/bash
+```bash
+#!/bin/bash
 
-# # Chose OS from stdin
-# # Copy the contents of the relevant requirements.<OS>.in into requirremtne.in
-# # Generate the requirements.txt
-# # Install packages
+# Chose OS from stdin
+# Copy the contents of the relevant requirements.<OS>.in into requirremtne.in
+# Generate the requirements.txt
+# Install packages
 
-# # conda create --prefix ./env python=3.9 -y
+# conda create --prefix ./env python=3.9 -y
 
-# # eval "$(conda shell.bash hook)"
-# # source conda activate base
+# eval "$(conda shell.bash hook)"
+# source conda activate base
 
-# source /Users/james.wolfaardt/miniforge3/bin/activate ./env
-# python --version
-# pip list
+source /Users/james.wolfaardt/miniforge3/bin/activate ./env
+python --version
+pip list
+```
 
+---
 
 ### M1 Pro config
 * [How to Setup TensorFlow on Apple Silicon Macs](https://www.mrdbourke.com/setup-apple-m1-pro-and-m1-max-for-machine-learning-and-data-science/)
