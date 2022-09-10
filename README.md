@@ -7,27 +7,39 @@ The code for preprocessing as well as the Deep Learning models can be found here
 ## Links
 
 ### TODO 
-- Config file for all (YAMl)
-- For loop 
-  - Pickles
-    - Default folder location out put
-    - Add to .gitignore
-  - Create model 
-    - best model save (run x times and then only save new model if better than previous)
-      - Test call back for model saved
-      - Give proper name
-    - Save to specific folder
-      - add to .gitignore
-  - Confussion matrixes
-    - Save all plots named nicely to folder
-    - Create CM object with results and save as txt to easily send Dawie
-- Requirements update 
-- Scripts update 
-- Makefile
-  - per OS
-    - Automatically copy reevant requirements into default file
-  - Add tensorboard 
-    - dev normal
+- [x] Update 1, 2 to class and having types
+- [ ] Update output locations
+- [ ] for loops
+- [ ] Improve try catches
+
+- [ ] Config file for all (YAMl)
+  - [ ] pass variables around making use of self in self.init
+    - [ ] i.e. not having to parse class and triggers around everywhere
+    - [ ] distinguish between pickles output 
+      - [ ] maybe data split
+      - [ ] keras or TF2
+        - [ ] test if there is actually a difference
+- [ ] Lint
+  - [ ] Setup black , flake, etc...
+- [ ] For loop 
+  - [ ] Pickles
+    - [ ] Default folder location out put
+  - [ ] Create model 
+    - [ ] best model save (run x times and then only save new model if better than previous)
+      - [ ] Test call back for model saved
+      - [ ] Give proper name
+    - [ ] Save to specific folder
+  - [ ] Confussion matrixes
+    - [ ] Save all plots named nicely to folder
+    - [ ] Create CM object with results and save as txt to easily send Dawie
+- [ ] Requirements update 
+- [ ] Scripts update 
+- [ ] Makefile
+  - [ ] per OS
+    - [ ] Automatically copy reevant requirements into default file
+  - [ ] Add tensorboard 
+    - [ ] dev normal
+  - [ ] Run all the steps (for the py files 1 - 4) and have them dependant on the previous
 
 # ------------------------------------------------------- Notes------------------------------------------------------- #
 
