@@ -72,6 +72,8 @@ class Create:
         model.add(Dense(len(TRIGGERS)))
         # For a binary classification you should have a sigmoid last layer
         # See 2nd answer for more details: https://stackoverflow.com/questions/68776790/model-predict-classes-is-deprecated-what-to-use-instead
+        # softmax for other experiment
+        # TODO add automatic logic for this
         model.add(Activation('sigmoid'))
 
         model.compile(loss='sparse_categorical_crossentropy',
