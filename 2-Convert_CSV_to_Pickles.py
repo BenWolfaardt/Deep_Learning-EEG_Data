@@ -12,6 +12,8 @@ DESCRIPTION:
 # when you start fitting the model to test it and generate a confusion matrix (I think)
 """
 
+import argparse
+from envyaml import EnvYAML
 import os
 import random
 import fnmatch
@@ -29,31 +31,49 @@ DIRECTORY_PICKLE_DATA_OUTPUT = "/Users/james.wolfaardt/code/__ben/Code/Deep_Lear
 # TODO fiddle with ratio
 PERCENTAGE_TRAINING_AND_VALIDATION = float(80)
 
-# 1, 3 don't exist
-# Participants = [2]
-Participants = [2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]
-Triggers =  ['L', 'R']
-
 scaler = StandardScaler()
 
 class Pickles:
     # def __init__(self, participants, triggers) -> None:
     def __init__(self) -> None:
-        # TODO figure out correct parsing
-        # self.participants: list[int] = Participants,
-        # self.triggers: list[str] = Triggers,
+        self.os: str = None
+        self.experiment_name: str = None
+        self.csvs: str = None
+        self.pickles: str = None
+        self.epochs: str = None
+        self.participants: list[int] = None
+        self.triggers: list[str] = None
+        self.participant: int = None
+        self.trigger: str = None
+        self.split: float = None
         self.training_data: list[str] = None
         self.testing_data: list[str] = None
-        self.path: str = None
+        self.config: EnvYAML = None
+        self.data_root_path: str = None
 
+    def load_yaml(self) -> None:
+        self.config = EnvYAML("./setup/config.yaml", strict=False)
+
+    def populate_settings(self):
+        # TODO parse in as cli command from make file
+        self.experiment = "libet"
+        self.os = "mac_m1"
+
+        self.name = self.config[f"experiment.details.{self.experiment}.name"]
+        self.csvs = self.config[f"os.{self.os}.io_paths.csv_files"]
+        self.pickles = self.config[f"os.{self.os}.io_paths.pickle_files"]
+        self.participants = self.config[f"experiment.details.{self.experiment}.participants"]
+        self.triggers = self.config[f"experiment.details.{self.experiment}.triggers"]
+        self.split = self.config["model_parameters.percentage_training_&_validation_to_testing_split"]
+    
     # Split the CSV data into [training & validation (grouped)] and 
     # testing epochs based on the PERCENTAGE_TRAINING_AND_VALIDATION
     # TODO seems like the random generator's rounding makes us loose 1 or 2 files, to investigate
     def generate_split_data_type_epoch_list(self, trigger, participant):
         try:
             # Random split of data into [training & validation (grouped)] and testing data
-            list_csv_files = fnmatch.filter(os.listdir(self.path), '*.csv')
-            k = len(list_csv_files) * PERCENTAGE_TRAINING_AND_VALIDATION // 100
+            list_csv_files = fnmatch.filter(os.listdir(self.epochs), '*.csv')
+            k = len(list_csv_files) * self.split // 100
             k = round(k)
             k = int(k)
             indicies = random.sample(range(len(list_csv_files)), k)
@@ -94,7 +114,7 @@ class Pickles:
     def populate_data_type_epoch_lists(self, selected_epochs, data, data_type, trigger):
         print(f"Generating {data_type} data (consisting of {len(selected_epochs)} epochs) for the {trigger} trigger.")
         
-        trigger_instance = Triggers.index(trigger)
+        trigger_instance = self.triggers.index(trigger)
 
         try:
             for epoch in tqdm(selected_epochs):
@@ -128,23 +148,24 @@ class Pickles:
         # Parenthesis depend on the input data -1 being batch size, channels, datasamples, idk
         x = np.array(x).reshape(-1,128,257,1)
 
-        pickle_out = open(f"{DIRECTORY_PICKLE_DATA_OUTPUT}/X-{participant}-{data_type}.pickle","wb")
+        pickle_out = open(f"{self.pickles}/X-{participant}-{data_type}.pickle","wb")
         pickle.dump(x, pickle_out)
         pickle_out.close()
 
-        pickle_out = open(f"{DIRECTORY_PICKLE_DATA_OUTPUT}/y-{participant}-{data_type}.pickle","wb")
+        pickle_out = open(f"{self.pickles}/y-{participant}-{data_type}.pickle","wb")
         pickle.dump(y, pickle_out)
         pickle_out.close()
 
     def generate_data_split_and_create(self):
         self.training_data = []
         self.testing_data = []
-        for participant in Participants:
+
+        for participant in self.participants:
             print(f"Participant: {participant}\n")
 
-            for trigger in Triggers:
+            for trigger in self.triggers:
                 # Directory manipulation
-                self.path = f"{DIRECTORY_CSV_DATA_ROOT}/{trigger}/{participant}"
+                self.epochs = f"{self.csvs}/{trigger}/{participant}"
 
                 # Create data split for training and validation data
                 training_and_validation_epochs = []
@@ -164,9 +185,10 @@ class Pickles:
             self.create_data_type_pickles(self.training_data, "Training", participant)
             self.create_data_type_pickles(self.testing_data, "Test", participant)
 
-            print("------------------------------------------------------------------------------------------------------------------------------------------------------------\n")
+            print("---------------------------------------------------------------------------------------------------------------------------------------------------\n")
 
 if __name__ == '__main__':
-    # app = Pickles(Participants, Triggers)
     app = Pickles()
+    app.load_yaml()
+    app.populate_settings()
     app.generate_data_split_and_create()
