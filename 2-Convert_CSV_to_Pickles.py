@@ -28,27 +28,34 @@ from tqdm import tqdm
 
 class Pickles:
     def __init__(self) -> None:
+        # config
         self.os: str = None
-        self.experiment_name: str = None
+        self.config: EnvYAML = None
+        self.experiment: str = None
+        # paths
         self.csvs: str = None
         self.pickles: str = None
         self.epochs: str = None
+        # experiment details
+        self.name: str = None
+        self.comparison: int = None
         self.participants: list[int] = None
         self.participant: int = None
         self.triggers: list[str] = None
         self.trigger: str = None
+        # model
         self.split: float = None
-        self.config: EnvYAML = None
 
     def load_yaml(self) -> None:
         self.config = EnvYAML("./setup/config.yaml", strict=False)
 
-    def populate_settings(self):
+    def populate_config(self):
         # TODO parse in as cli command from make file
         self.experiment = "libet"
         self.os = "mac_m1"
 
         self.name = self.config[f"experiment.details.{self.experiment}.name"]
+        self.comparison = self.config[f"model_parameters.comparison"]
         self.csvs = self.config[f"os.{self.os}.io_paths.csv_files"]
         self.pickles = self.config[f"os.{self.os}.io_paths.pickle_files"]
         self.participants = self.config[f"experiment.details.{self.experiment}.participants"]
@@ -169,16 +176,23 @@ class Pickles:
                 random.shuffle(testing_data)
                 print()
 
+            if self.comparison == 1:
+                random.shuffle(training_data)
+                random.shuffle(testing_data)
+                self.create_data_type_pickles(training_data, "Training")
+                self.create_data_type_pickles(testing_data, "Test")
+                print("---------------------------------------------------------------------------------------------------------------------------------------------------\n")
+        
+        if self.comparison == 0:
             random.shuffle(training_data)
             random.shuffle(testing_data)
-
             self.create_data_type_pickles(training_data, "Training")
             self.create_data_type_pickles(testing_data, "Test")
-
             print("---------------------------------------------------------------------------------------------------------------------------------------------------\n")
+
 
 if __name__ == '__main__':
     app = Pickles()
     app.load_yaml()
-    app.populate_settings()
+    app.populate_config()
     app.generate_data_split_and_create()
