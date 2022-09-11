@@ -13,28 +13,20 @@ DESCRIPTION:
 """
 
 import argparse
-from envyaml import EnvYAML
 import os
 import random
 import fnmatch
 import pickle
 import random
-from textwrap import indent
-from typing import List
 import numpy as np
-from tqdm import tqdm
+
+from envyaml import EnvYAML
+from io import BufferedWriter
+from nptyping import NDArray
 from sklearn.preprocessing import StandardScaler
-
-DIRECTORY_CSV_DATA_ROOT = '/Users/james.wolfaardt/code/__ben/Code/Siobhan_Data'
-# TODO output to correct directory and not project root.
-DIRECTORY_PICKLE_DATA_OUTPUT = "/Users/james.wolfaardt/code/__ben/Code/Deep_Learning-EEG_Data/outputs/pickles"
-# TODO fiddle with ratio
-PERCENTAGE_TRAINING_AND_VALIDATION = float(80)
-
-scaler = StandardScaler()
+from tqdm import tqdm
 
 class Pickles:
-    # def __init__(self, participants, triggers) -> None:
     def __init__(self) -> None:
         self.os: str = None
         self.experiment_name: str = None
@@ -42,14 +34,11 @@ class Pickles:
         self.pickles: str = None
         self.epochs: str = None
         self.participants: list[int] = None
-        self.triggers: list[str] = None
         self.participant: int = None
+        self.triggers: list[str] = None
         self.trigger: str = None
         self.split: float = None
-        self.training_data: list[str] = None
-        self.testing_data: list[str] = None
         self.config: EnvYAML = None
-        self.data_root_path: str = None
 
     def load_yaml(self) -> None:
         self.config = EnvYAML("./setup/config.yaml", strict=False)
@@ -69,7 +58,7 @@ class Pickles:
     # Split the CSV data into [training & validation (grouped)] and 
     # testing epochs based on the PERCENTAGE_TRAINING_AND_VALIDATION
     # TODO seems like the random generator's rounding makes us loose 1 or 2 files, to investigate
-    def generate_split_data_type_epoch_list(self, trigger, participant):
+    def generate_split_data_type_epoch_list(self):
         try:
             # Random split of data into [training & validation (grouped)] and testing data
             list_csv_files = fnmatch.filter(os.listdir(self.epochs), '*.csv')
@@ -85,10 +74,10 @@ class Pickles:
             i = 1
             for csv_file in range(len(list_csv_files)):
                 if csv_file < len(indicies):
-                    i = self.exists_in_list(testing_list, int(indicies[csv_file] + 1), i, trigger, participant)
+                    i = self.exists_in_list(testing_list, int(indicies[csv_file] + 1), i, self.trigger, self.participant)
                 else:
                     if i < len(indicies): # no minus 1 as counting starts at 1 and not at 0
-                        testing_list.append(f"P{participant}{trigger}{i}.csv")
+                        testing_list.append(f"P{self.participant}{self.trigger}{i}.csv")
                         i += 1
                     else:
                         break
@@ -111,15 +100,16 @@ class Pickles:
         return i
 
     # Create and populate the Training/Test data
-    def populate_data_type_epoch_lists(self, selected_epochs, data, data_type, trigger):
-        print(f"Generating {data_type} data (consisting of {len(selected_epochs)} epochs) for the {trigger} trigger.")
+    def populate_data_type_epoch_lists(self, selected_epochs, data, data_type):
+        print(f"Generating {data_type} data (consisting of {len(selected_epochs)} epochs) for the {self.trigger} trigger.")
         
-        trigger_instance = self.triggers.index(trigger)
+        trigger_instance: int = self.triggers.index(self.trigger)
+        scaler = StandardScaler()
 
         try:
             for epoch in tqdm(selected_epochs):
-                epoch_array = np.genfromtxt(f"{self.path}/{epoch}", delimiter=',')
-                new_array = scaler.fit_transform(epoch_array, None)
+                epoch_array: NDArray = np.genfromtxt(f"{self.epochs}/{epoch}", delimiter=',')
+                new_array: NDArray = scaler.fit_transform(epoch_array, None)
                 # TODO check the reshape logic for Siobhan
                 # Instead of having the full 0:750 ms now we are reshaping it to 100:550 ms
                 # reshape_array = new_array[:,100:550]
@@ -128,13 +118,13 @@ class Pickles:
             return data
 
         except Exception as e:
-            print(f"An error occurded whilst creating the {data_type} data for trigger: {trigger} epoch {epoch}.")
+            print(f"An error occurded whilst creating the {data_type} data for trigger: {self.trigger} epoch {epoch}.")
             quit()
             # TODO raise flag so that this is printed at the end. 
             # print("Remeber to check back and correct this!")
 
     # Create and populate the pickles from the Training/Testing data
-    def create_data_type_pickles(self, data, data_type, participant):
+    def create_data_type_pickles(self, data, data_type):
         print(f"Generating Pickles for {data_type} data")
         
         x = []
@@ -148,42 +138,42 @@ class Pickles:
         # Parenthesis depend on the input data -1 being batch size, channels, datasamples, idk
         x = np.array(x).reshape(-1,128,257,1)
 
-        pickle_out = open(f"{self.pickles}/X-{participant}-{data_type}.pickle","wb")
+        pickle_out: BufferedWriter = open(f"{self.pickles}/X-{self.participant}-{data_type}.pickle","wb")
         pickle.dump(x, pickle_out)
         pickle_out.close()
 
-        pickle_out = open(f"{self.pickles}/y-{participant}-{data_type}.pickle","wb")
+        pickle_out: BufferedWriter = open(f"{self.pickles}/y-{self.participant}-{data_type}.pickle","wb")
         pickle.dump(y, pickle_out)
         pickle_out.close()
 
     def generate_data_split_and_create(self):
-        self.training_data = []
-        self.testing_data = []
+        training_data: list[str] = []
+        testing_data: list[str] = []
 
-        for participant in self.participants:
-            print(f"Participant: {participant}\n")
+        for self.participant in self.participants:
+            print(f"Participant: {self.participant}\n")
 
-            for trigger in self.triggers:
+            for self.trigger in self.triggers:
                 # Directory manipulation
-                self.epochs = f"{self.csvs}/{trigger}/{participant}"
+                self.epochs = f"{self.csvs}/{self.trigger}/{self.participant}"
 
                 # Create data split for training and validation data
-                training_and_validation_epochs = []
-                testing_epochs = []
-                training_and_validation_epochs, testing_epochs = self.generate_split_data_type_epoch_list(trigger, participant)
+                training_and_validation_epochs: list[str] = []
+                testing_epochs: list[str] = []
+                training_and_validation_epochs, testing_epochs = self.generate_split_data_type_epoch_list()
 
-                training_data = self.populate_data_type_epoch_lists(training_and_validation_epochs, self.training_data, "Training", trigger)
-                testing_data = self.populate_data_type_epoch_lists(testing_epochs, self.testing_data, "Test", trigger)
+                training_data = self.populate_data_type_epoch_lists(training_and_validation_epochs, training_data, "Training")
+                testing_data = self.populate_data_type_epoch_lists(testing_epochs, testing_data, "Test")
 
-                random.shuffle(self.training_data)
-                random.shuffle(self.testing_data)
+                random.shuffle(training_data)
+                random.shuffle(testing_data)
                 print()
 
             random.shuffle(training_data)
             random.shuffle(testing_data)
 
-            self.create_data_type_pickles(self.training_data, "Training", participant)
-            self.create_data_type_pickles(self.testing_data, "Test", participant)
+            self.create_data_type_pickles(training_data, "Training")
+            self.create_data_type_pickles(testing_data, "Test")
 
             print("---------------------------------------------------------------------------------------------------------------------------------------------------\n")
 
