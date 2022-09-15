@@ -67,6 +67,7 @@ class Pickles:
         self.training_and_validation_epoch_list: list[str] = []
         self.testing_epoch_list: list[str] = []
 
+        # TODO have better try catch logic so that you know exactly where the error happened.
         try:
             # Random split of data into [training & validation (grouped)] and testing data
             list_csv_files = fnmatch.filter(os.listdir(self.epochs), '*.csv')
@@ -112,6 +113,7 @@ class Pickles:
         scaler = StandardScaler()
         data: list[NDArray, int] = []
 
+        # TODO have better try catch logic so that you know exactly where the error happened.
         try:
             for epoch in tqdm(self.selected_epochs):
                 epoch_array: NDArray = np.genfromtxt(f"{self.epochs}/{epoch}", delimiter=',')
