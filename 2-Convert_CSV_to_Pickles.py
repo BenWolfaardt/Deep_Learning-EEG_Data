@@ -39,12 +39,11 @@ class Pickles:
         # paths
         self.csvs: str = None
         self.pickles: str = None
-        self.epochs: str = None
         # experiment details
         self.name: str = None
+        self.participants: list[int] = []
+        self.triggers: list[str] = []
         self.comparison: int = None
-        self.participants: list[int] = None
-        self.triggers: list[str] = None
         # model
         self.split: float = None
 
@@ -53,15 +52,16 @@ class Pickles:
 
     def populate_config(self):
         # TODO parse in as cli command from make file
-        self.experiment = "libet"
         self.os = "mac_m1"
+        self.experiment = "libet"
 
-        self.name = self.config[f"experiment.details.{self.experiment}.name"]
-        self.comparison = self.config[f"model_parameters.comparison"]
+        # TODO add name into folder save or something
         self.csvs = self.config[f"os.{self.os}.io_paths.csv_files"]
         self.pickles = self.config[f"os.{self.os}.io_paths.pickle_files"]
+        self.name = self.config[f"experiment.details.{self.experiment}.name"]
         self.participants = self.config[f"experiment.details.{self.experiment}.participants"]
         self.triggers = self.config[f"experiment.details.{self.experiment}.triggers"]
+        self.comparison = self.config[f"model_parameters.comparison"]
         self.split = self.config["model_parameters.percentage_training_&_validation_to_testing_split"]
     
     # Split the CSV data into [training & validation (grouped)] and 
