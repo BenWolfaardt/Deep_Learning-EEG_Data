@@ -3,13 +3,17 @@ Author: Ben Wolfaardt
 
 DESCRIPTION: 
 
-# If you manualy divided the data in different folders to test it after training (take 10 files each class)
+Convert our CSV files to Pickles
 
-# Saving the preprocessed data to feed in to algorithm 
-# This way you dont have to load all the csv files every time you change your algorithm
+This eliminates the necessity of having to load all the csv files every time you change your model.
+Our pickles are split into training and validation (grouped) as well as testing pickles for both 
+features, X, and labels, y. 
 
-# Testing data is saved in a different pickle, this pickle will be loaded
-# when you start fitting the model to test it and generate a confusion matrix (I think)
+The ratio of training and validation (grouped) to testing split is set in the config.yaml file: 
+    model_parameters -> percentage_training_&_validation_to_testing_split
+
+Considering our small dataset a value of between 70 and 80 percent is suggested
+
 """
 
 import argparse
