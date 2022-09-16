@@ -7,6 +7,7 @@ import numpy as np
 import pickle
 
 from envyaml import EnvYAML
+from keras.backend import clear_session
 from keras.callbacks import EarlyStopping,  ModelCheckpoint, TensorBoard, ReduceLROnPlateau
 from keras.layers import Dense, Dropout, Activation, Flatten, Conv2D, MaxPooling2D
 from keras.models import Sequential
@@ -159,7 +160,7 @@ class Create:
 
         kfold = StratifiedKFold(n_splits=self.kfolds, shuffle=True, random_state=42)
 
-        print(f"\nTraining model for particiapnt: {self.participant}")
+        print(f"\nTraining model for particiapnt: {self.participant}/{len(self.participants)}")
 
         for index, (train_index, validation_index) in enumerate(kfold.split(self.X, self.y)):
             print(f"Training on fold: {str(index+1)}/{self.kfolds}\n")
@@ -178,13 +179,14 @@ class Create:
 
             print()
 
-        print(f"\nEvaluated acuracy: {np.mean(cvscores):.2f}% (+/- {np.std(cvscores):.2f}%) on {self.kfolds} k-folds")
+        print(f"\nEvaluated accuracy: {np.mean(cvscores):.2f}% (+/- {np.std(cvscores):.2f}%) on {self.kfolds} k-folds")
 
     # Save model to disk
     def save_model(self) -> None:
         # TODO don't save coparison as number but rather as value of dict {0: "All", 1: "Single"}
         self.filename = f"{self.experiment}_{self.comparison}-{self.participant}"
         self.model.save(f"{self.models}/{self.filename}.h5")
+        clear_session()
     
     def setup_and_test_data(self) -> None:
         for self.participant in self.participants:
