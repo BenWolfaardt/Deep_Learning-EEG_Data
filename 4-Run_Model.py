@@ -8,67 +8,96 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pickle
 
+from envyaml import EnvYAML
 from keras.models import load_model, Sequential
 from nptyping import NDArray, Shape, Float64
 from numpy.core.shape_base import block
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 
-EXPERIMENT = "Siobhan"
-TRIGGERS = ['Left','Right']
-PARTICIPANTS = ["5"]
-# PARTICIPANTS = [2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]
-COMPARISON = {0: "All", 1: "Single"}
-NAME = f"{EXPERIMENT}_{COMPARISON[1]}-{PARTICIPANTS[0]}"
-DIRECTORY_PICKLE_DATA_OUTPUT = "/Users/james.wolfaardt/code/__ben/Code/Deep_Learning-EEG_Data/outputs/pickles"
-DIRECTORY_MODEL_DATA_OUTPUT = "/Users/james.wolfaardt/code/__ben/Code/Deep_Learning-EEG_Data/outputs/models"
-KFOLD_SPLITS=5
-participant = ["5"]
-
 class Test:
     def __init__(self) -> None:
-        pass
+        # config
+        self.os: str = None
+        self.config: EnvYAML = None
+        self.experiment: str = None
+        # paths
+        self.pickles: str = None
+        self.models: str = None
+        self.confusion_matrixes: str = None
+        # experiment details
+        self.name: str = None
+        self.participants: list[int] = []
+        self.triggers: list[str] = []
+        self.comparison: int = None
+
+    def load_yaml(self) -> None:
+        self.config = EnvYAML("./setup/config.yaml", strict=False)
+
+    def populate_config(self):
+        # TODO parse in as cli command from make file
+        self.os = "mac_m1"
+        self.experiment = "libet"
+
+        # TODO add name into folder save or something
+        self.pickles = self.config[f"os.{self.os}.io_paths.pickle_files"]
+        self.models = self.config[f"os.{self.os}.io_paths.model_files"]
+        self.confusion_matrixes = self.config[f"os.{self.os}.io_paths.confusion_matrices"]
+        self.name = self.config[f"experiment.details.{self.experiment}.name"]
+        self.participants = self.config[f"experiment.details.{self.experiment}.participants"]
+        self.triggers = self.config[f"experiment.details.{self.experiment}.triggers"]
+        self.comparison = self.config[f"model_parameters.comparison"]
+    
     
     # Load test pickles (unseen)
     # TODO is this a dynamic shape dependant on pickle?
     # def load_data(self) -> tuple[NDArray[Shape['24,128,257,1'], Float64], NDArray[Shape['1'], Float64]]:
-    def load_data(self) -> tuple[NDArray, NDArray]:
-        with open(f"{DIRECTORY_PICKLE_DATA_OUTPUT}/X-{str(participant[0])}-Test.pickle", 'rb') as f:
-            Xtest = pickle.load(f) # shape: (24, 128, 257, 1) - Participant: 2
-            Xtest = np.asarray(Xtest)
-        with open(f"{DIRECTORY_PICKLE_DATA_OUTPUT}/y-{str(participant[0])}-Test.pickle", 'rb') as f:
-            ytest = pickle.load(f) # len: 24
-            ytest = np.asarray(ytest)
-        return Xtest, ytest
+    def load_data(self) -> None:
+        # TODO assign type hints
+        self.Xtest: NDArray = None
+        self.ytest: NDArray = None
+        
+        with open(f"{self.pickles}/X-{str(self.participant)}-Test.pickle", 'rb') as f:
+            self.Xtest = pickle.load(f) # shape: (24, 128, 257, 1) - Participant: 2
+            self.Xtest = np.asarray(self.Xtest)
+        with open(f"{self.pickles}/y-{str(self.participant)}-Test.pickle", 'rb') as f:
+            self.ytest = pickle.load(f) # len: 24
+            self.ytest = np.asarray(self.ytest)
 
     # Load model
-    def load_model(self, name) -> Sequential:
-        model = load_model(f"{DIRECTORY_MODEL_DATA_OUTPUT}/{name}")
+    def load_model(self) -> None:
+        self.filename = f"{self.experiment}_{self.comparison}-{self.participant}"
+        self.model = load_model(f"{self.models}/{self.filename}.h5")
         print("Model Loaded")
-        return model
 
     # TODO tidy up
     # Run model on unseen data
-    def run_model_on_unseen_data(self, model, Xtest, ytest)  -> None:
-        scores = model.evaluate(Xtest, ytest, verbose=1)
-        print("%s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
+    def run_model_on_unseen_data(self) -> None:
+        scores = self.model.evaluate(self.Xtest, self.ytest, verbose=1)
+        print("%s: %.2f%%" % (self.model.metrics_names[1], scores[1]*100))
 
-    def predict_model_on_unseen_data(self, model, Xtest, ytest, classes) -> None:
-        cm = self.generate_confussion_matrix(model, Xtest, ytest, classes)
-        self.plot_confusion_matrix(cm, triggers=TRIGGERS, normalize=True)
+    def predict_model_on_unseen_data(self) -> None:
+        self.normalize = True
+        
+        self.generate_confussion_matrix()
+        self.plot_confusion_matrix()
 
-    def generate_confussion_matrix(self, model, X_test, y_test, classes) -> NDArray[Shape['2,2'], Float64]:
-        if classes:
-            predictions = (model.predict_classes(X_test, batch_size=10, verbose=0) > 0.9).astype("int32")
+    def generate_confussion_matrix(self) -> NDArray[Shape['2,2'], Float64]:
+        # TODO make dynamic for other experiment board size as well =
+        self.confusion_matrix: NDArray[Shape['2,2'], Float64] = None
+        
+        if self.classes:
+            predictions = (self.model.predict_classes(self.Xtest, batch_size=10, verbose=0) > 0.9).astype("int32")
             predictions = np.argmax(predictions, axis=1)
         else:
-            predictions = (model.predict(X_test, batch_size=10, verbose=0) > 0.9).astype("int32")
+            predictions = (self.model.predict(self.Xtest, batch_size=10, verbose=0) > 0.9).astype("int32")
             predictions = np.argmax(predictions, axis=1)
 
-        return confusion_matrix(predictions, y_test)
+        self.confusion_matrix = confusion_matrix(predictions, self.ytest)
 
-    def plot_confusion_matrix(self, cm, normalize, triggers) -> None:
-        if normalize:
-            cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+    def plot_confusion_matrix(self) -> None:
+        if self.normalize:
+            # Not sure about the below cm replacement
+            self.confusion_matrix = self.confusion_matrix.astype('float') / self.confusion_matrix.sum(axis=1)[:, np.newaxis]
             title = "Normalised Confusion Natrix"
             print(title)
         else:
@@ -76,33 +105,38 @@ class Test:
             print(title)
 
         plt.figure(figsize=(6.2,5))
-        plt.matshow(cm, interpolation='nearest', cmap=plt.cm.Blues, fignum=plt.gcf().number)
+        plt.matshow(self.confusion_matrix, interpolation='nearest', cmap=plt.cm.Blues, fignum=plt.gcf().number)
         plt.title(title, loc='center', y=1.05)
         plt.colorbar()
-        tick_marks = np.arange(len(triggers))
-        plt.xticks(tick_marks, triggers)
-        plt.yticks(tick_marks, triggers, rotation=90)
+        tick_marks = np.arange(len(self.triggers))
+        plt.xticks(tick_marks, self.triggers)
+        plt.yticks(tick_marks, self.triggers, rotation=90)
         plt.xlabel('Predicted')
         plt.ylabel('True')
         plt.tick_params(top=False, labelleft=True, labelbottom=True, labeltop=False)
 
         # Add values to confusion matrix
-        fmt = '.2f' if normalize else 'd'
-        thresh = cm.max() / 2.
-        for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
-            plt.text(j, i, format(cm[i, j], fmt), horizontalalignment="center", color="white" if cm[i, j] > thresh else "black")
+        fmt = '.2f' if self.normalize else 'd'
+        thresh = self.confusion_matrix.max() / 2.
+        for i, j in itertools.product(range(self.confusion_matrix.shape[0]), range(self.confusion_matrix.shape[1])):
+            plt.text(j, i, format(self.confusion_matrix[i, j], fmt), horizontalalignment="center", color="white" if self.confusion_matrix[i, j] > thresh else "black")
     
         plt.show(block=True)
 
     def setup_and_test_data(self) -> None:
-        Xtest, ytest = self.load_data()
-        model = self.load_model(f"{NAME}.h5")
-        self.run_model_on_unseen_data(model, Xtest, ytest)
-        self.predict_model_on_unseen_data(model, Xtest, ytest, classes=False)
-        # TODO test the below on a TensorFlow 1 setup
-        # self.predict_model_on_unseen_data(self, model, Xtest, ytest, classes=True)
+        for self.participant in self.participants:
+            self.load_data()
+            self.load_model()
+            self.run_model_on_unseen_data()
+            self.classes = False
+            self.predict_model_on_unseen_data()
+            # TODO test the below on a TensorFlow 1 setup
+            # self.classes = True
+            # self.predict_model_on_unseen_data()
 
 # Main function
 if __name__ == '__main__':
     app = Test()
+    app.load_yaml()
+    app.populate_config()
     app.setup_and_test_data()
