@@ -28,6 +28,7 @@ class Test:
         self.name: str = None
         self.participants: list[int] = []
         self.triggers: list[str] = []
+        self.version: str = None
         self.comparison: int = None
 
     def load_yaml(self) -> None:
@@ -45,6 +46,7 @@ class Test:
         self.name = self.config[f"experiment.details.{self.experiment}.name"]
         self.participants = self.config[f"experiment.details.{self.experiment}.participants"]
         self.triggers = self.config[f"experiment.details.{self.experiment}.triggers"]
+        self.version = self.config[f"experiment.details.{self.experiment}.version"]
         self.comparison = self.config[f"model_parameters.comparison"]
     
     
@@ -56,17 +58,17 @@ class Test:
         self.Xtest: NDArray = None
         self.ytest: NDArray = None
         
-        with open(f"{self.pickles}/X-{str(self.participant)}-Test.pickle", 'rb') as f:
+        with open(f"{self.pickles}/{self.version}/X-{str(self.participant)}-Testing.pickle", 'rb') as f:
             self.Xtest = pickle.load(f) # shape: (24, 128, 257, 1) - Participant: 2
             self.Xtest = np.asarray(self.Xtest)
-        with open(f"{self.pickles}/y-{str(self.participant)}-Test.pickle", 'rb') as f:
+        with open(f"{self.pickles}/{self.version}/y-{str(self.participant)}-Testing.pickle", 'rb') as f:
             self.ytest = pickle.load(f) # len: 24
             self.ytest = np.asarray(self.ytest)
 
     # Load model
     def load_model(self) -> None:
         self.filename = f"{self.experiment}_{self.comparison}-{self.participant}"
-        self.model = load_model(f"{self.models}/{self.filename}.h5")
+        self.model = load_model(f"{self.models}/{self.version}/{self.filename}.h5")
         print("Model Loaded")
 
     # TODO tidy up
