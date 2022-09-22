@@ -43,6 +43,7 @@ class Pickles:
         self.name: str = None
         self.participants: list[int] = []
         self.triggers: list[str] = []
+        self.version: str = None
         self.comparison: int = None
         # model
         self.split: float = None
@@ -50,22 +51,22 @@ class Pickles:
     def load_yaml(self) -> None:
         self.config = EnvYAML("./setup/config.yaml", strict=False)
 
-    def populate_config(self):
-        # TODO parse in as cli command from make file
+    def populate_config(self) -> None:
+        # TODO parse in as cli command from make file (argparse)
         self.os = "mac_m1"
         self.experiment = "libet"
 
-        # TODO add name into folder save or something
         self.csvs = self.config[f"os.{self.os}.io_paths.csv_files"]
         self.pickles = self.config[f"os.{self.os}.io_paths.pickle_files"]
         self.name = self.config[f"experiment.details.{self.experiment}.name"]
         self.participants = self.config[f"experiment.details.{self.experiment}.participants"]
         self.triggers = self.config[f"experiment.details.{self.experiment}.triggers"]
+        self.version = self.config[f"experiment.details.{self.experiment}.version"]
         self.comparison = self.config[f"model_parameters.comparison"]
         self.split = self.config["model_parameters.percentage_training_&_validation_to_testing_split"]
     
-    # Split the CSV data into [training & validation (grouped)] and 
-    # testing epochs based on the PERCENTAGE_TRAINING_AND_VALIDATION
+    # Split the CSV data into [training & validation (grouped)] and testing epochs:
+    #   based on the percentage_training_&_validation_to_testing_split in config.yaml
     # TODO seems like the random generator's rounding makes us loose 1 or 2 files, to investigate
     def generate_split_data_type_epoch_list(self) -> None:
         self.training_and_validation_epoch_list: list[str] = []
@@ -86,10 +87,10 @@ class Pickles:
             i = 1
             for csv_file in range(len(list_csv_files)):
                 if csv_file < len(indicies):
-                    i = self.exists_in_list(self.testing_epoch_list, int(indicies[csv_file] + 1), i, self.trigger, self.participant)
+                    i = self.exists_in_list(int(indicies[csv_file] + 1), i)
                 else:
                     if i < len(indicies): # no minus 1 as counting starts at 1 and not at 0
-                        self.testing_epoch_list.append(f"P{self.participant}{self.trigger}{i}.csv")
+                        self.testing_epoch_list.append(f"{self.trigger}{i}.csv")
                         i += 1
                     else:
                         break
@@ -99,27 +100,29 @@ class Pickles:
 
     # TODO description of this function
     # TODO rename funciton to something more descriptive
-    def exists_in_list(self, testing_list, x, i, trigger, participant):
+    def exists_in_list(self, x, i):
         while x != i:
             if x == i:
                 pass
             else:
-                testing_list.append(f"P{participant}{trigger}{i}.csv")
+                self.testing_epoch_list.append(f"{self.trigger}{i}.csv")
                 i += 1
         i += 1
         return i
 
     # Create and populate the Training/Test data
-    def populate_data_type_epoch_lists(self):
-        print(f"Generating {self.data_type} data (consisting of {len(self.selected_epochs)} epochs) for the {self.trigger} trigger.")
+    # TODO add type hints for function
+    def populate_data_type_epoch_lists(self, epoch_list, data, data_type: str):
+        print(f"Generating {data_type} data (consisting of {len(epoch_list)} epochs) for the {self.trigger} trigger.")
         
         trigger_instance: int = self.triggers.index(self.trigger)
         scaler = StandardScaler()
-        data: list[NDArray, int] = []
 
         # TODO have better try catch logic so that you know exactly where the error happened.
+        # return listed in func name
+        # return after exception? 
         try:
-            for epoch in tqdm(self.selected_epochs):
+            for epoch in tqdm(epoch_list):
                 epoch_array: NDArray = np.genfromtxt(f"{self.epochs}/{epoch}", delimiter=',')
                 new_array: NDArray = scaler.fit_transform(epoch_array, None)
                 # TODO check the reshape logic for Siobhan
@@ -130,14 +133,15 @@ class Pickles:
             return data
 
         except Exception as e:
-            print(f"An error occurded whilst creating the {self.data_type} data for trigger: {self.trigger} epoch {epoch}.")
+            print(f"An error occurded whilst creating the {data_type} data for trigger: {self.trigger} epoch {epoch}.")
             quit()
             # TODO raise flag so that this is printed at the end. 
             # print("Remeber to check back and correct this!")
 
     # Create and populate the pickles from the Training/Testing data
-    def create_data_type_pickles(self, data):
-        print(f"Generating Pickles for {self.data_type} data")
+    # TODO add type hints for function
+    def create_data_type_pickles(self, data, data_type: str):
+        print(f"Generating Pickles for {data_type} data")
         
         X: list = []
         y: list = []
@@ -147,15 +151,25 @@ class Pickles:
         for features, label in data:
             X.append(features)
             y.append(label)
-        # Parenthesis depend on the input data -1 being batch size, channels, datasamples, idk
-        # TODO reshape size adjusted based on experiment
-        X = np.array(X).reshape(-1,128,257,1)
 
-        pickle_out: BufferedWriter = open(f"{self.pickles}/X-{self.participant}-{self.data_type}.pickle","wb")
+        # Parenthesis depend on the input data -1 being batch size, channels, datasamples, idk
+        # TODO reshape size adjusted based on experiment (automated)
+        #   Original: 128 x 257
+        #   New: 128 x 129
+        # Idea: shape of X
+        X = np.array(X).reshape(-1,128,129,1)
+
+        # TODO Improve below logic to only run once per version
+        try:
+            os.makedirs(f"{self.pickles}/{self.version}")
+        except:
+            print("already exists")
+
+        pickle_out: BufferedWriter = open(f"{self.pickles}/{self.version}/X-{self.participant}-{data_type}.pickle","wb")
         pickle.dump(X, pickle_out)
         pickle_out.close()
 
-        pickle_out: BufferedWriter = open(f"{self.pickles}/y-{self.participant}-{self.data_type}.pickle","wb")
+        pickle_out: BufferedWriter = open(f"{self.pickles}/{self.version}/y-{self.participant}-{data_type}.pickle","wb")
         pickle.dump(y, pickle_out)
         pickle_out.close()
         
@@ -164,36 +178,44 @@ class Pickles:
     def generate_data_split_and_create(self):
         self.participant: int = None
         self.trigger: str = None
-        self.data_type: str = None
-        data_types = ["Training", "Testing"]
+        # TODO add type hints
+        self.training_data = []
+        self.testing_data = []
 
         for self.participant in self.participants:
             print(f"Participant: {self.participant}\n")
+            # TODO this would need to be called differently (earlier) when the self.comparison == 0:
+            #   Or else we will be throwing away data
+            # TODO add type hints
+            training_and_validation_data, testing_data = [], []
 
             for self.trigger in self.triggers:
                 # Directory manipulation
-                self.epochs = f"{self.csvs}/{self.trigger}/{self.participant}"
+                self.epochs = f"{self.csvs}/{self.trigger}/P{self.participant}"
 
                 # Create data split for training and validation data
                 self.generate_split_data_type_epoch_list()
 
-                for self.data_type in data_types:
-                    if self.data_type == "Training":
-                        self.selected_epochs = self.training_and_validation_epoch_list
-                        training_and_validation_data = self.populate_data_type_epoch_lists()
-                    elif self.data_type == "Testing":
-                        self.selected_epochs = self.testing_epoch_list
-                        testing_epoch_list_data = self.populate_data_type_epoch_lists()
+                # Save each selected epoch into a list for both groups of data listed below
+                training_and_validation_data = self.populate_data_type_epoch_lists(self.training_and_validation_epoch_list, self.training_data, "Training")
+                testing_data = self.populate_data_type_epoch_lists(self.testing_epoch_list, self.testing_data, "Testing")                             
 
                 random.shuffle(training_and_validation_data)
-                random.shuffle(testing_epoch_list_data)
+                random.shuffle(testing_data)
                 print()
 
             if self.comparison == 1:
-                self.create_data_type_pickles(training_and_validation_data)
+                self.create_data_type_pickles(training_and_validation_data, "Training")
+                self.create_data_type_pickles(testing_data, "Testing")
         
+        # TODO change naming convention for these
+        #   As it will be all participants in the same pickles.
         if self.comparison == 0:
-            self.create_data_type_pickles(testing_epoch_list_data)
+            random.shuffle(training_and_validation_data)
+            random.shuffle(testing_data)
+
+            self.create_data_type_pickles(training_and_validation_data, "Training")
+            self.create_data_type_pickles(testing_data, "Testing")
 
 
 if __name__ == '__main__':
