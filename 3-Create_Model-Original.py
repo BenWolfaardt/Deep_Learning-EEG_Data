@@ -27,6 +27,7 @@ class Create:
         self.name: str = None
         self.participants: list[int] = []
         self.triggers: list[str] = []
+        self.version: str = None
         self.comparison: int = None
         # model
         self.kfold: int = None
@@ -92,20 +93,20 @@ class Create:
         self.name = self.config[f"experiment.details.{self.experiment}.name"]
         self.participants = self.config[f"experiment.details.{self.experiment}.participants"]
         self.triggers = self.config[f"experiment.details.{self.experiment}.triggers"]
+        self.version = self.config[f"experiment.details.{self.experiment}.version"]
         self.kfolds = self.config[f"model_parameters.kfolds"]
         self.epochs = self.config[f"model_parameters.epochs"]
         self.comparison = self.config[f"model_parameters.comparison"]
 
     # Load preprocessed training/test pickles
-    def load_data(self) -> tuple[NDArray, NDArray]:
-        # TODO assign type hints
-        self.X = None
-        self.y = None
+    def load_data(self) -> None:
+        self.X: NDArray = None
+        self.y: NDArray = None
         
-        with open(f"{self.pickles}/X-{str(self.participant)}-Training.pickle", 'rb') as f:
+        with open(f"{self.pickles}/{self.version}/X-{str(self.participant)}-Training.pickle", 'rb') as f:
             self.X = pickle.load(f) # shape: (1369, 63, 450, 1)
             self.X = np.asarray(self.X)
-        with open(f"{self.pickles}/y-{str(self.participant)}-Training.pickle", 'rb') as f:
+        with open(f"{self.pickles}/{self.version}/y-{str(self.participant)}-Training.pickle", 'rb') as f:
             self.y = pickle.load(f) # shape: (
             self.y = np.transpose(self.y)
 
@@ -185,7 +186,7 @@ class Create:
     def save_model(self) -> None:
         # TODO don't save coparison as number but rather as value of dict {0: "All", 1: "Single"}
         self.filename = f"{self.experiment}_{self.comparison}-{self.participant}"
-        self.model.save(f"{self.models}/{self.filename}.h5")
+        self.model.save(f"{self.models}/{self.version}/{self.filename}.h5")
         clear_session()
     
     def setup_and_test_data(self) -> None:
