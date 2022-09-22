@@ -39,7 +39,6 @@ class Test:
         self.os = "mac_m1"
         self.experiment = "libet"
 
-        # TODO add name into folder save or something
         self.pickles = self.config[f"os.{self.os}.io_paths.pickle_files"]
         self.models = self.config[f"os.{self.os}.io_paths.model_files"]
         self.confusion_matrixes = self.config[f"os.{self.os}.io_paths.confusion_matrices"]
