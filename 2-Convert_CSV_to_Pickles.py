@@ -112,6 +112,7 @@ class Pickles:
 
     # Create and populate the Training/Test data
     # TODO add type hints for function
+    # TODO add comment next to each parsed argument on a new line explaining it
     def populate_data_type_epoch_lists(self, epoch_list, data, data_type: str):
         print(f"Generating {data_type} data (consisting of {len(epoch_list)} epochs) for the {self.trigger} trigger.")
         
@@ -140,6 +141,7 @@ class Pickles:
 
     # Create and populate the pickles from the Training/Testing data
     # TODO add type hints for function
+    # TODO add comment next to each parsed argument on a new line explaining it
     def create_data_type_pickles(self, data, data_type: str):
         print(f"Generating Pickles for {data_type} data")
         
