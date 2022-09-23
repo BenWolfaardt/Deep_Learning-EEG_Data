@@ -180,44 +180,49 @@ class Pickles:
     def generate_data_split_and_create(self):
         self.participant: int = None
         self.trigger: str = None
-        # TODO add type hints
-        self.training_data = []
-        self.testing_data = []
+
+        # TODO arrays should be created outside first loop when comparing all to each other
 
         for self.participant in self.participants:
+            # TODO add type hints
+            # TODO better names
+            self.training_data = []
+            self.testing_data = []
+
             print(f"Participant: {self.participant}\n")
             # TODO this would need to be called differently (earlier) when the self.comparison == 0:
             #   Or else we will be throwing away data
             # TODO add type hints
-            training_and_validation_data, testing_data = [], []
+            # TODO better names
+            total_training_and_validation_data, total_testing_data = [], []
 
             for self.trigger in self.triggers:
                 # Directory manipulation
-                self.epochs = f"{self.csvs}/{self.trigger}/P{self.participant}"
+                self.epochs = f"{self.csvs}/{self.version}/{self.trigger}/P{self.participant}"
 
                 # Create data split for training and validation data
                 self.generate_split_data_type_epoch_list()
 
                 # Save each selected epoch into a list for both groups of data listed below
-                training_and_validation_data = self.populate_data_type_epoch_lists(self.training_and_validation_epoch_list, self.training_data, "Training")
-                testing_data = self.populate_data_type_epoch_lists(self.testing_epoch_list, self.testing_data, "Testing")                             
+                total_training_and_validation_data = self.populate_data_type_epoch_lists(self.training_and_validation_epoch_list, self.training_data, "Training")
+                total_testing_data = self.populate_data_type_epoch_lists(self.testing_epoch_list, self.testing_data, "Testing")                             
 
-                random.shuffle(training_and_validation_data)
-                random.shuffle(testing_data)
+                random.shuffle(total_training_and_validation_data)
+                random.shuffle(total_testing_data)
                 print()
 
             if self.comparison == 1:
-                self.create_data_type_pickles(training_and_validation_data, "Training")
-                self.create_data_type_pickles(testing_data, "Testing")
+                self.create_data_type_pickles(total_training_and_validation_data, "Training")
+                self.create_data_type_pickles(total_testing_data, "Testing")
         
         # TODO change naming convention for these
         #   As it will be all participants in the same pickles.
         if self.comparison == 0:
-            random.shuffle(training_and_validation_data)
-            random.shuffle(testing_data)
+            random.shuffle(total_training_and_validation_data)
+            random.shuffle(total_testing_data)
 
-            self.create_data_type_pickles(training_and_validation_data, "Training")
-            self.create_data_type_pickles(testing_data, "Testing")
+            self.create_data_type_pickles(total_training_and_validation_data, "Training")
+            self.create_data_type_pickles(total_testing_data, "Testing")
 
 
 if __name__ == '__main__':
