@@ -11,6 +11,8 @@ from keras.backend import clear_session
 from keras.callbacks import EarlyStopping,  ModelCheckpoint, TensorBoard, ReduceLROnPlateau
 from keras.layers import Dense, Dropout, Activation, Flatten, Conv2D, MaxPooling2D
 from keras.models import Sequential
+from keras.utils.vis_utils import plot_model
+
 from nptyping import NDArray
 from sklearn.model_selection import StratifiedKFold
 
@@ -48,7 +50,7 @@ class Create:
             # This is the callback for stopping the optimization when performance worsens on the validation-set
             callback_early_stopping = EarlyStopping(
                 monitor='val_loss',
-                patience=3,
+                patience=7,
                 verbose=1,
                 # restore_best_weights=True,
             )
@@ -71,7 +73,7 @@ class Create:
             )
 
             self.callbacks = [
-                # callback_early_stopping,
+                callback_early_stopping,
                 # callback_checkpoint,
                 # callback_tensorboard,
                 # callback_reduce_lr
@@ -102,11 +104,20 @@ class Create:
     def load_data(self) -> None:
         self.X: NDArray = None
         self.y: NDArray = None
+        self.filename: str = None
         
-        with open(f"{self.pickles}/{self.version}/X-{str(self.participant)}-Training.pickle", 'rb') as f:
+        # TODO don't save coparison as number but rather as value of dict {0: "All", 1: "Single"}
+        # 0: "All" (all participants' data combined)
+        if self.comparison == 0:
+            filename = ""
+        # 1: "Single" (each participant's data seperate)
+        elif self.comparison == 1:
+            filename = f"{self.participant}-"
+
+        with open(f"{self.pickles}/{self.version}/{self.comparison}/X-{filename}Training.pickle", 'rb') as f:
             self.X = pickle.load(f) # shape: (1369, 63, 450, 1)
             self.X = np.asarray(self.X)
-        with open(f"{self.pickles}/{self.version}/y-{str(self.participant)}-Training.pickle", 'rb') as f:
+        with open(f"{self.pickles}/{self.version}/{self.comparison}/y-{filename}Training.pickle", 'rb') as f:
             self.y = pickle.load(f) # shape: (
             self.y = np.transpose(self.y)
 
@@ -152,6 +163,11 @@ class Create:
                         optimizer='adam',
                         metrics=['accuracy'])
 
+        # TODO get the bottom to work - it wanted more libraries to be installed
+        #   https://machinelearningmastery.com/visualize-deep-learning-neural-network-model-keras/
+        #   See Further reading: 
+        #       https://www.graphviz.org/
+        # plot_model(self.model, to_file='model_plot.png', show_shapes=True, show_layer_names=True)
         # print(model.summary())
 
     # Train model with K-fold cross validation with early stopping
@@ -161,7 +177,8 @@ class Create:
 
         kfold = StratifiedKFold(n_splits=self.kfolds, shuffle=True, random_state=42)
 
-        print(f"\nTraining model for particiapnt: {self.participant}/{len(self.participants)}")
+        if self.comparison == 1:
+            print(f"\nTraining model for particiapnt: {self.participant}/{len(self.participants)}")
 
         for index, (train_index, validation_index) in enumerate(kfold.split(self.X, self.y)):
             print(f"Training on fold: {str(index+1)}/{self.kfolds}\n")
@@ -170,7 +187,7 @@ class Create:
             Xtrain, Xval = self.X[train_index], self.X[validation_index]
             ytrain, yval = self.y[train_index], self.y[validation_index]
 
-            self.model.fit(Xtrain,ytrain, epochs=self.epochs, batch_size=10, verbose=1, validation_data=(Xval,yval), callbacks=self.callbacks, shuffle=True)
+            self.model.fit(Xtrain, ytrain, epochs=self.epochs, batch_size=10, verbose=1, validation_data = (Xval, yval), callbacks=self.callbacks, shuffle=True)
             # history = model.fit(Xtrain,ytrain, epochs=EPOCHS, batch_size=10, verbose=1, validation_data=(Xval,yval), callbacks=[early_stopping], shuffle=True)
             # accuracy_history = history.history['accuracy']
             # val_accuracy_history = history.history['val_accuracy']
@@ -184,17 +201,29 @@ class Create:
 
     # Save model to disk
     def save_model(self) -> None:
-        # TODO don't save coparison as number but rather as value of dict {0: "All", 1: "Single"}
-        self.filename = f"{self.experiment}_{self.comparison}-{self.participant}"
-        self.model.save(f"{self.models}/{self.version}/{self.filename}.h5")
+        if self.comparison == 0:
+            filename = f"{self.experiment}"
+        # 1: "Single" (each participant's data seperate)
+        elif self.comparison == 1:
+            filename = f"{self.participant}"
+
+        self.model.save(f"{self.models}/{self.version}/{self.comparison}/{filename}.h5")
         clear_session()
     
     def setup_and_test_data(self) -> None:
-        for self.participant in self.participants:
+        # 0: "All" (all participants' data combined)
+        if self.comparison == 0:
             self.load_data()
             self.create_model()
             self.kfold_cross_validation()
             self.save_model()
+        # 1: "Single" (each participant's data seperate)
+        elif self.comparison == 1:
+            for self.participant in self.participants:
+                self.load_data()
+                self.create_model()
+                self.kfold_cross_validation()
+                self.save_model()
 
 if __name__ == '__main__':
     app = Create()
