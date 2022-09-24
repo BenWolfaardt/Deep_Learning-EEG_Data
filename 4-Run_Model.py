@@ -6,6 +6,7 @@ Authors: William & Ben
 import itertools
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 import pickle
 
 from envyaml import EnvYAML
@@ -56,18 +57,43 @@ class Test:
         # TODO assign type hints
         self.Xtest: NDArray = None
         self.ytest: NDArray = None
+        self.filename: str = None
         
-        with open(f"{self.pickles}/{self.version}/X-{str(self.participant)}-Testing.pickle", 'rb') as f:
-            self.Xtest = pickle.load(f) # shape: (24, 128, 257, 1) - Participant: 2
+        # TODO don't save coparison as number but rather as value of dict {0: "All", 1: "Single"}
+        # 0: "All" (all participants' data combined)
+        if self.comparison == 0:
+            filename = ""
+        # 1: "Single" (each participant's data seperate)
+        elif self.comparison == 1:
+            filename = f"{self.participant}-"
+        # filename = "1-"
+
+        with open(f"{self.pickles}/{self.version}/{self.comparison}/X-{filename}Testing.pickle", 'rb') as f:
+        # with open(f"{self.pickles}/{self.version}/X-{filename}Testing.pickle", 'rb') as f:
+            print(f"X: {self.pickles}/{self.version}/X-{filename}Testing.pickle")
+            self.Xtest = pickle.load(f) # shape: (1369, 63, 450, 1)
             self.Xtest = np.asarray(self.Xtest)
-        with open(f"{self.pickles}/{self.version}/y-{str(self.participant)}-Testing.pickle", 'rb') as f:
-            self.ytest = pickle.load(f) # len: 24
-            self.ytest = np.asarray(self.ytest)
+        with open(f"{self.pickles}/{self.version}/{self.comparison}/y-{filename}Testing.pickle", 'rb') as f:
+        # with open(f"{self.pickles}/{self.version}/y-{filename}Testing.pickle", 'rb') as f:
+            print(f"y: {self.pickles}/{self.version}/y-{filename}Testing.pickle")
+            self.ytest = pickle.load(f) # shape: (
+            self.ytest = np.transpose(self.ytest)
 
     # Load model
     def load_model(self) -> None:
-        self.filename = f"{self.experiment}_{self.comparison}-{self.participant}"
-        self.model = load_model(f"{self.models}/{self.version}/{self.filename}.h5")
+        # TODO don't save coparison as number but rather as value of dict {0: "All", 1: "Single"}
+        # 0: "All" (all participants' data combined)
+        if self.comparison == 0:
+            filename = "inter_participant"
+        # 1: "Single" (each participant's data seperate)
+        elif self.comparison == 1:
+            filename = f"{self.participant}"
+
+        # filename = "_1-1"
+
+        # self.model = load_model(f"{self.models}/{self.version}/{self.comparison}/{self.experiment}{filename}.h5")
+        self.model = load_model(f"{self.models}/{self.version}/{self.comparison}/{filename}.h5")
+        print(f"Model: {self.models}/{self.version}/{self.comparison}/{self.comparison}/{filename}.h5")
         print("Model Loaded")
 
     # TODO tidy up
@@ -77,7 +103,7 @@ class Test:
         print("%s: %.2f%%" % (self.model.metrics_names[1], scores[1]*100))
 
     def predict_model_on_unseen_data(self) -> None:
-        self.normalize = True
+        self.normalize = False
         
         self.generate_confussion_matrix()
         self.plot_confusion_matrix()
@@ -122,10 +148,27 @@ class Test:
         for i, j in itertools.product(range(self.confusion_matrix.shape[0]), range(self.confusion_matrix.shape[1])):
             plt.text(j, i, format(self.confusion_matrix[i, j], fmt), horizontalalignment="center", color="white" if self.confusion_matrix[i, j] > thresh else "black")
     
-        plt.show(block=True)
+        try:
+            os.makedirs(f"{self.confusion_matrixes}/{self.version}")
+        except:
+            print("already exists")
+
+        if self.comparison == 0:
+            filename = "inter_participant"
+        elif self.comparison == 1:
+            filename = f"{self.participant}"
+
+        try:
+            os.makedirs(f"{self.confusion_matrixes}/{self.version}/{self.comparison}")
+        except:
+            print("already exists")
+
+        plt.savefig(f"{self.confusion_matrixes}/{self.version}/{self.comparison}/{filename}")
+        # plt.show(block=True)
 
     def setup_and_test_data(self) -> None:
-        for self.participant in self.participants:
+        # 0: "All" (all participants' data combined)
+        if self.comparison == 0:
             self.load_data()
             self.load_model()
             self.run_model_on_unseen_data()
@@ -134,6 +177,17 @@ class Test:
             # TODO test the below on a TensorFlow 1 setup
             # self.classes = True
             # self.predict_model_on_unseen_data()
+        # 1: "Single" (each participant's data seperate)
+        elif self.comparison == 1:
+            for self.participant in self.participants:
+                self.load_data()
+                self.load_model()
+                self.run_model_on_unseen_data()
+                self.classes = False
+                self.predict_model_on_unseen_data()
+                # TODO test the below on a TensorFlow 1 setup
+                # self.classes = True
+                # self.predict_model_on_unseen_data()
 
 # Main function
 if __name__ == '__main__':
