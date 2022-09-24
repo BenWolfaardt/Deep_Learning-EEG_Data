@@ -163,15 +163,23 @@ class Pickles:
 
         # TODO Improve below logic to only run once per version
         try:
-            os.makedirs(f"{self.pickles}/{self.version}")
+            os.makedirs(f"{self.pickles}/{self.version}/{self.comparison}")
         except:
             print("already exists")
 
-        pickle_out: BufferedWriter = open(f"{self.pickles}/{self.version}/X-{self.participant}-{data_type}.pickle","wb")
+        # TODO don't save coparison as number but rather as value of dict {0: "All", 1: "Single"}
+        # 0: "All" (all participants' data combined)
+        if self.comparison == 0:
+            filename = f"{data_type}"
+        # 1: "Single" (each participant's data seperate)
+        elif self.comparison == 1:
+            filename = f"{self.participant}-{data_type}"
+
+        pickle_out: BufferedWriter = open(f"{self.pickles}/{self.version}/{self.comparison}/X-{filename}.pickle","wb")
         pickle.dump(X, pickle_out)
         pickle_out.close()
 
-        pickle_out: BufferedWriter = open(f"{self.pickles}/{self.version}/y-{self.participant}-{data_type}.pickle","wb")
+        pickle_out: BufferedWriter = open(f"{self.pickles}/{self.version}/{self.comparison}/y-{filename}.pickle","wb")
         pickle.dump(y, pickle_out)
         pickle_out.close()
         
@@ -181,20 +189,27 @@ class Pickles:
         self.participant: int = None
         self.trigger: str = None
 
-        # TODO arrays should be created outside first loop when comparing all to each other
-
-        for self.participant in self.participants:
-            # TODO add type hints
-            # TODO better names
+        # TODO better logic
+        # TODO add type hints
+        # TODO better names
+        # 0: "All" (all participants' data combined)
+        if self.comparison == 0:
             self.training_data = []
             self.testing_data = []
+            total_training_and_validation_data = []
+            total_testing_data = []
 
+        for self.participant in self.participants:
             print(f"Participant: {self.participant}\n")
-            # TODO this would need to be called differently (earlier) when the self.comparison == 0:
-            #   Or else we will be throwing away data
+
             # TODO add type hints
             # TODO better names
-            total_training_and_validation_data, total_testing_data = [], []
+            # 1: "Single" (each participant's data seperate)
+            if self.comparison == 1:
+                self.training_data = []
+                self.testing_data = []
+                total_training_and_validation_data = []
+                total_testing_data = []
 
             for self.trigger in self.triggers:
                 # Directory manipulation
