@@ -139,6 +139,15 @@ class Pickles:
             # TODO raise flag so that this is printed at the end. 
             # print("Remeber to check back and correct this!")
 
+    def normalize(self, arr, t_min, t_max):
+        norm_arr = []
+        diff = t_max - t_min
+        diff_arr = max(arr) - min(arr)    
+        for i in arr:
+            temp = (((i - min(arr))*diff)/diff_arr) + t_min
+            norm_arr.append(temp)
+        return norm_arr
+
     # Create and populate the pickles from the Training/Testing data
     # TODO add type hints for function
     # TODO add comment next to each parsed argument on a new line explaining it
@@ -153,6 +162,24 @@ class Pickles:
         for features, label in data:
             X.append(features)
             y.append(label)
+
+        # print(X)
+
+        # epochs x 128 x 129
+        for i in range(len(data)):
+            for j in range(129-1):
+                # gives range staring from 1 and ending at 3  
+                array_1d = X[i][j]
+                range_to_normalize = (0,1)
+                X[i][j] = self.normalize(array_1d, 
+                                                range_to_normalize[0], 
+                                                range_to_normalize[1])
+                
+                # display original and normalized array
+                # print("Original Array = ",array_1d)
+                # print("Normalized Array = ",normalized_array_1d)
+
+        # print(X)
 
         # Parenthesis depend on the input data -1 being batch size, channels, datasamples, idk
         # TODO reshape size adjusted based on experiment (automated)
