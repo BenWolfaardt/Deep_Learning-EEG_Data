@@ -40,7 +40,7 @@ class Create:
         self.model: Sequential = Sequential()
         self.X: NDArray = None
         self.y: NDArray = None
-        # filename
+        # filenames
         self.filename_load: str = ""
         self.filename_save: str = ""
 
@@ -90,7 +90,8 @@ class Create:
         self.config = EnvYAML("./setup/config.yaml", strict=False)
 
     def populate_config(self) -> None:
-        # TODO parse in as cli command from make file
+        # TODO
+        #   Parse in as arg using argparse
         self.os = "mac_m1"
         self.experiment = "libet"
 
@@ -108,7 +109,7 @@ class Create:
     # Load preprocessed training/test pickles
     def load_data(self) -> None:
         # TODO
-        #   don't save self.comparison as number but rather as value of dict {0: "All", 1: "Single"}
+        #   Don't save self.comparison as number but rather as value of dict {0: "All", 1: "Single"}
         # 0: "All" (all participants' data combined)
         if self.comparison == 0:
             self.filename_load = ""
