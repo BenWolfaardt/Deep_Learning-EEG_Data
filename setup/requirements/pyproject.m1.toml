@@ -1,0 +1,34 @@
+[tool.poetry]
+name = "deep_learning-eeg_data"
+version = "0.1.0"
+description = ""
+authors = ["Ben Wolfaardt <benjaminwolfaardt@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+
+argparse = "1.4.0"
+envyaml = "1.10.211231"
+# Should the below be needed add using `poetry add`
+# Keras==2.9.0
+# Keras-Applications==1.0.8
+# Keras-Preprocessing==1.1.2
+matplotlib = "3.5.3"
+mne = "1.1.0"
+more-itertools = "8.14.0"
+nptyping = "2.3.1"
+numpy = "1.23.2"
+pandas = "1.4.3"
+scikit-learn = "1.1.2"
+tensorboard = "2.9.1"
+tensorflow-datasets = "4.6.0"
+tensorflow-macos = "2.9.2"
+tensorflow-metal = "0.5.0"
+tqdm = "4.64.0"
+wrapt = "1.14.1"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
